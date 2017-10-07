@@ -10,9 +10,9 @@ Display graphical representation of the ant behaviours and information to monito
 
 Use the virtual ant context to train the networks, train the networks permanently using what the ants see and the consequences of theirs actions.
 
-version 0.0.1: Ants are able to spread the virtual space in order to cover all the available space without having contact between them. The ants avoid each other
+version 0.0.1 done: Ants are able to spread the virtual space in order to cover all the available space without having contact between them. The ants avoid each other
 
-version 0.0.2: Foods will appear in the space, ants should be able to get them and bring back them to the nest, letting a pheromone path
+version 0.0.2 on going: Foods will appear in the space, ants should be able to get them and bring back them to the nest, letting a pheromone path
 
 version 0.0.3: Ants should be able to trace back the a pheromone path to find food sources
 
@@ -96,11 +96,14 @@ and so on...
 
 The server is able to run with any precision number, 8 appeared to be enough and fast, but the server can be re-build to run with 12, 16 or 32 neurons in the input layer if needed.
 
-A neuron in the input layer activate itself when another ant appears in its quadrant, more the ant is close more the neuron is activated from 0 to 1.
+The first 8 neurons in the input layer activate itself when another ant appears in its quadrant, more the ant is close more the neuron is activated from 0 to 1.
 
-An ant has a maximum distance of vision, so an input neuron starts to activate itself when another ant enters inside the circle of vision and in the associated neuron quadrant
+The 9 to 15 neurons in the input layer activate itself when food appears in its quadrant, more the food is close more the neuron is activated from 0 to 1.
 
-It'll be the same for food, pheromone, hostile ant, for next version, but each kind of object to detect will have its own circle of neurons. So 8 for friend ants, 8 for food, 8 for pheromones, 8 for hostile ants detection.
+An ant has a maximum distance of vision, so an input neuron starts to activate itself when another ant or food enters inside the circle of vision and in the associated neuron quadrant
+
+It'll be the same for pheromone, hostile ant, for next version, but each kind of object to detect will have its own circle of neurons. So 8 for friend ants, 8 for food, 8 for pheromones, 8 for hostile ants detection.
+
 
 ## output layer
 
