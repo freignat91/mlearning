@@ -380,5 +380,5 @@ where:
 
 ## License
 
-mllearning is licensed under the Apache License, Version 2.0. See https://github.com/freignat91/mlearning/LICENSE
+mllearning is licensed under the Apache License, Version 2.0. See https://github.com/freignat91/mlearning/blob/master/LICENSE
 for the full license text.
