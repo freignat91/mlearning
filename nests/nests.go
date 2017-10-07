@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"time"
 
 	"github.com/freignat91/mlearning/network"
@@ -35,6 +36,7 @@ type Nests struct {
 	ready        bool
 	happiness    float64
 	dataSet      *network.MlDataSet
+	foods        []*Food
 	//
 	log           bool
 	period        int64
@@ -46,8 +48,14 @@ type Nests struct {
 	statContact   *Stats
 }
 
-//Data .
-type Data struct {
+// GraphicData .
+type GraphicData struct {
+	Ants  []*AntData `json:"ants"`
+	Foods []*Food    `json:"foods"`
+}
+
+//AntData .
+type AntData struct {
 	ID        int     `json:"id"`
 	X         float64 `json:"x"`
 	Y         float64 `json:"y"`
@@ -101,7 +109,7 @@ type Info struct {
 }
 
 //NewNests .
-func NewNests(xmin float64, ymin float64, xmax float64, ymax float64, nbs []int) (*Nests, error) {
+func NewNests(xmin float64, ymin float64, xmax float64, ymax float64, nbs []int, foodNb int, foodGroupNb int) (*Nests, error) {
 	nests := &Nests{
 		xmin:          xmin,
 		ymin:          ymin,
@@ -139,6 +147,7 @@ func NewNests(xmin float64, ymin float64, xmax float64, ymax float64, nbs []int)
 	nests.worseAnt = nests.worseNest.worseAnt
 	nests.attractors = newAttractors()
 	nests.ready = true
+	//nests.addFoods(foodNb, foodGroupNb)
 	return nests, nil
 }
 
@@ -147,13 +156,16 @@ func (ns *Nests) IsReady() bool {
 	return ns.ready
 }
 
-//GetData .
-func (ns *Nests) GetData() []*Data {
-	ret := make([]*Data, 0, 0)
+//GetGraphicData .
+func (ns *Nests) GetGraphicData() *GraphicData {
+	ants := make([]*AntData, 0, 0)
 	for _, nest := range ns.nests {
-		nest.addData(&ret)
+		nest.addData(&ants)
 	}
-	return ret
+	return &GraphicData{
+		Ants:  ants,
+		Foods: ns.foods,
+	}
 }
 
 //Start .
@@ -412,4 +424,19 @@ func (ns *Nests) GetNetwork(nestID int, antID int) (*network.MLNetwork, error) {
 		return nil, fmt.Errorf("bad ant id: %d should be [1-%d]", antID, len(ns.nests[nestID-1].ants))
 	}
 	return ns.nests[nestID-1].ants[antID-1].network, nil
+}
+
+func (ns *Nests) addFoods(nb int, gnb int) {
+	ns.foods = make([]*Food, 0, 0)
+	for gg := 0; gg < gnb; gg++ {
+		gx := ns.xmin + float64(ns.xmax-ns.xmin)*.2 + rand.Float64()*float64(ns.xmax-ns.xmin)*.6
+		gy := ns.ymin + float64(ns.ymax-ns.ymin)*.2 + rand.Float64()*float64(ns.ymax-ns.ymin)*.6
+		for ii := 0; ii < nb; ii++ {
+			food := &Food{
+				X: gx + rand.Float64()*20,
+				Y: gy + rand.Float64()*20,
+			}
+			ns.foods = append(ns.foods, food)
+		}
+	}
 }

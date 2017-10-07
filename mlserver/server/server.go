@@ -48,11 +48,15 @@ func (s *Server) Start(version string) error {
 
 func (s *Server) init() {
 	s.network = &network.MLNetwork{}
-	nests, _ := nests.NewNests(0, 0, 500, 500, nestsDef)
-	s.nests = nests
+	s.initNests()
 	//fmt.Printf("init data: %v\n", s.nests.GetData())
 	s.startGRPCServer()
 	s.start()
+}
+
+func (s *Server) initNests() {
+	nests, _ := nests.NewNests(0, 0, 500, 500, nestsDef, 50, 5)
+	s.nests = nests
 }
 
 func (s *Server) start() {
@@ -86,6 +90,7 @@ func (s *Server) handleAPIFunctions(r *mux.Router) {
 	r.HandleFunc("/api/v1/globalInfo", s.getGlobalInfo).Methods("GET")
 	r.HandleFunc("/api/v1/info", s.getInfo).Methods("GET")
 	r.HandleFunc("/api/v1/restart", s.restart).Methods("GET")
+	r.HandleFunc("/api/v1/addFoods", s.addFoods).Methods("POST")
 }
 
 //startGRPCServer .

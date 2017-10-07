@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/freignat91/mlearning/nests"
 	"github.com/gorilla/mux"
 )
 
@@ -21,7 +20,7 @@ type RetInt struct {
 }
 
 func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
-	data := s.nests.GetData()
+	data := s.nests.GetGraphicData()
 	json.NewEncoder(w).Encode(data)
 }
 
@@ -78,7 +77,10 @@ func (s *Server) getInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) restart(w http.ResponseWriter, r *http.Request) {
-	nests, _ := nests.NewNests(0, 0, 500, 500, nestsDef)
-	s.nests = nests
+	s.initNests()
+	json.NewEncoder(w).Encode("{}")
+}
+
+func (s *Server) addFoods(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("{}")
 }

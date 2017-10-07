@@ -76,12 +76,12 @@ export class DrawerComponent {
     if (!this.display) {
       return
     }
-    //console.log(data)
+    //console.log(this.sessionService.data)
     const ctx = this.ctx
     ctx.lineWidth = 1;
     ctx.clearRect(-1,-1,this.sessionService.width+1, this.sessionService.height+1);
 
-    for (let obj of this.sessionService.data) {
+    for (let obj of this.sessionService.data.ants) {
       //console.log(obj)
       let angle = (Math.PI*2*obj.direction)/this.visionSize
 
@@ -103,6 +103,12 @@ export class DrawerComponent {
         ctx.arc(this.getx(obj.x), this.gety(obj.y), this.getl(15), 0, 2*Math.PI, false);
         ctx.stroke();
       }
+    }
+    for (let obj of this.sessionService.data.foods) {
+      //console.log(obj)
+      ctx.beginPath();
+      ctx.fillStyle="red";
+      ctx.fillRect(obj.x, obj.y, 3, 3)
     }
   }
 

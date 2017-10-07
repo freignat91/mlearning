@@ -7,7 +7,7 @@ func (a *Ant) getCloser(ns *Nests) []*Ant {
 	list := make([]*Ant, 0, 0)
 	for _, nest := range ns.nests {
 		for _, ant := range nest.ants {
-			if a.dist2(ant) < distMax {
+			if a.distAnt2(ant) < distMax {
 				list = append(list, ant)
 			}
 		}
@@ -15,8 +15,12 @@ func (a *Ant) getCloser(ns *Nests) []*Ant {
 	return list
 }
 
-func (a *Ant) dist2(ant *Ant) float64 {
+func (a *Ant) distAnt2(ant *Ant) float64 {
 	return (ant.x-a.x)*(ant.x-a.x) + (ant.y-a.y)*(ant.y-a.y)
+}
+
+func (a *Ant) distFood2(f *Food) float64 {
+	return (f.X-a.x)*(f.X-a.x) + (f.Y-a.y)*(f.Y-a.y)
 }
 
 func (a *Ant) printf(ns *Nests, format string, args ...interface{}) {

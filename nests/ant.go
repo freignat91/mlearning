@@ -7,7 +7,8 @@ import (
 	"github.com/freignat91/mlearning/network"
 )
 
-var inNb = 8
+var visionNb = 8
+var inNb = 16 //8 for ants, 8 for foods
 var outNb = 8
 
 // Ant .
@@ -52,8 +53,8 @@ func newAnt(ns *Nests, n *Nest, id int) (*Ant, error) {
 		id:            id,
 		maxSpeed:      0.3, //+ rand.Float64()/10,
 		vision:        30,
-		x:             rand.Float64()*(ns.xmax-20) + 10,
-		y:             rand.Float64()*(ns.ymax-20) + 10,
+		x:             n.x + 20.0 - rand.Float64()*40,
+		y:             n.y + 20.0 - rand.Float64()*40,
 		direction:     int(rand.Int31n(int32(outNb))),
 		entries:       make([]float64, inNb, inNb),
 		lastEntries:   make([]float64, inNb, inNb),
@@ -71,10 +72,12 @@ func newAnt(ns *Nests, n *Nest, id int) (*Ant, error) {
 	ant.speed = ant.maxSpeed
 	ant.setNetwork(ns)
 	if id == 1 {
-		ant.x = ns.xmax / 2
-		ant.y = ns.ymax / 2
-		ant.direction = 0
-		//ant.speed = 0
+		/*
+			ant.x = ns.xmax / 2
+			ant.y = ns.ymax / 2
+			ant.direction = 0
+			//ant.speed = 0
+		*/
 	} else if ant.id <= inNb+1 {
 		/*
 			ant.x = (ns.xmax / 2) + 25*math.Sin(math.Pi*2.0/float64(visionSize)*float64(ant.id-2))
@@ -105,8 +108,8 @@ func (a *Ant) setNetwork(ns *Nests) {
 	a.network = net
 }
 
-func (a *Ant) getData() *Data {
-	data := Data{
+func (a *Ant) getData() *AntData {
+	data := AntData{
 		ID:        a.id,
 		X:         a.x,
 		Y:         a.y,
@@ -260,7 +263,7 @@ func (a *Ant) updateEntries(ns *Nests) {
 	for _, nest := range ns.nests {
 		for _, ant := range nest.ants {
 			if ant != a {
-				dist2 := a.dist2(ant)
+				dist2 := a.distAnt2(ant)
 				if dist2 < dist2Max {
 					if dist2 < dist2Max/4 {
 						a.statContact.incr()
@@ -279,12 +282,39 @@ func (a *Ant) updateEntries(ns *Nests) {
 		if ang < 0 {
 			ang = 2*math.Pi + ang
 		}
-		index := int(ang*float64(inNb)/2.0/math.Pi + 0.000001)
-		if index >= inNb {
-			index = index - inNb
+		index := int(ang*float64(visionNb)/2.0/math.Pi + 0.000001)
+		if index >= visionNb {
+			index = index - visionNb
 		}
 		//a.printf(ns, "find %d angle=%0.2f degres=%0.2f index=%d\n", ant.id, ang, ang*180/math.Pi, index)
 		a.entries[index] = ((dist2Max - dist2m) / dist2Max)
+	}
+	dist2m = dist2Max
+	var foodMin *Food
+	for _, food := range ns.foods {
+		dist2 := a.distFood2(food)
+		if dist2 < dist2Max {
+			if dist2 < dist2Max/4 {
+				a.statContact.incr()
+				a.contact = true
+			}
+			if dist2 < dist2m {
+				foodMin = food
+				dist2m = dist2
+			}
+		}
+	}
+	if foodMin != nil {
+		ang := math.Atan2(foodMin.X-a.x, foodMin.Y-a.y)
+		if ang < 0 {
+			ang = 2*math.Pi + ang
+		}
+		index := int(ang*float64(visionNb)/2.0/math.Pi + 0.000001)
+		if index >= visionNb {
+			index = index - visionNb
+		}
+		//a.printf(ns, "find %d angle=%0.2f degres=%0.2f index=%d\n", ant.id, ang, ang*180/math.Pi, index)
+		a.entries[visionNb+index] = ((dist2Max - dist2m) / dist2Max)
 	}
 	a.computeHapiness(ns)
 }
@@ -296,8 +326,13 @@ func (a *Ant) computeHapiness(ns *Nests) {
 	}
 	a.lastHapiness = a.hapiness
 	a.hapiness = 0
-	for _, value := range a.entries {
-		a.hapiness -= value
+	for ii := visionNb; ii < visionNb*2; ii++ {
+		a.hapiness += a.entries[ii]
+	}
+	if a.hapiness == 0 {
+		for ii := 0; ii < visionNb; ii++ {
+			a.hapiness -= a.entries[ii]
+		}
 	}
 }
 

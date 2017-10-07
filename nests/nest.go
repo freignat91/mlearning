@@ -1,8 +1,12 @@
 package nests
 
+import "math/rand"
+
 //Nest .
 type Nest struct {
 	id            int
+	x             float64
+	y             float64
 	ants          []*Ant
 	statTrain     *Stats
 	statDecision  *Stats
@@ -26,6 +30,13 @@ func newNest(ns *Nests, id int, nb int) (*Nest, error) {
 		statNetwork:   newStats(nil, nil),
 		statContact:   newStats(nil, nil),
 	}
+	if rand.Float64() < 0.5 {
+		nest.x = ns.xmin + 25
+		nest.y = ns.ymin + 25
+	} else {
+		nest.x = ns.xmax - 25
+		nest.y = ns.ymax - 25
+	}
 	for ii := range nest.ants {
 		ant, err := newAnt(ns, nest, ii+1)
 		if err != nil {
@@ -38,7 +49,7 @@ func newNest(ns *Nests, id int, nb int) (*Nest, error) {
 	return nest, nil
 }
 
-func (n *Nest) addData(list *[]*Data) {
+func (n *Nest) addData(list *[]*AntData) {
 	for _, ant := range n.ants {
 		*list = append(*list, ant.getData())
 	}
