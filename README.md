@@ -1,6 +1,6 @@
 # Ants Machine learning
 
-mlearning v0.0.1
+mlearning v0.0.2 on going
 
 # Purpose
 
@@ -10,7 +10,7 @@ Display graphical representation of the ant behaviours and information to monito
 
 Use the virtual ant context to train the networks, train the networks permanently using what the ants see and the consequences of theirs actions.
 
-version 0.0.1: Ants should be able to spread the virtual space in order to cover all the available space witout having contact between them. The ants avoid each other
+version 0.0.1: Ants are able to spread the virtual space in order to cover all the available space without having contact between them. The ants avoid each other
 
 version 0.0.2: Foods will appear in the space, ants should be able to get them and bring back them to the nest, letting a pheromone path
 
