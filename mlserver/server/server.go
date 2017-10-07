@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	config                 = mlConfig{}
-	ctx    context.Context = context.Background()
+	config = mlConfig{}
+	ctx    = context.Background()
 )
 
 const port = "3001"
