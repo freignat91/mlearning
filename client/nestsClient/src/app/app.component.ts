@@ -141,6 +141,9 @@ export class AppComponent {
      if (this.speed <0) {
        this.speed = 0
      }
+     if (value == 2 && this.speed == 0) {
+       this.speed = 1
+     }
      this.httpService.setSleep(this.speed).subscribe(
        data => {
          console.log(data)
