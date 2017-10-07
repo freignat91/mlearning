@@ -19,6 +19,12 @@ type RetInt struct {
 	Ret int `json:"ret"`
 }
 
+// FoodCoord .
+type FoodCoord struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
 func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
 	data := s.nests.GetGraphicData()
 	json.NewEncoder(w).Encode(data)
@@ -82,5 +88,9 @@ func (s *Server) restart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) addFoods(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var t FoodCoord
+	decoder.Decode(&t)
+	s.nests.AddFoods(t.X, t.Y)
 	json.NewEncoder(w).Encode("{}")
 }

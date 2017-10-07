@@ -192,4 +192,20 @@ export class AppComponent {
      }
    }
 
+   addFoods(evt : MouseEvent) {
+     //let x = evt.clientX - 7
+     //let y = evt.clientY- 60
+     //let xr = x * this.sessionService.xmax / this.sessionService.width + this.sessionService.xmin
+     //let yr = y * this.sessionService.ymax / this.sessionService.height + this.sessionService.ymin
+     let xr = 250
+     let yr = 250
+     this.httpService.addFoods(xr, yr).subscribe(
+       data => {
+         console.log("foods added")
+       },
+       error => {
+         console.log(error)
+       }
+     )
+   }
 }

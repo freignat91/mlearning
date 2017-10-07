@@ -114,6 +114,15 @@ export class HttpService {
       }
     )
   }
+
+  addFoods(x : number, y : number) {
+    return this.httpPost("/addFoods", {x: x, y: y})
+      .map((res : Response) => {
+        return res.json()
+      }
+    )
+  }
+
 //--------------------------------------------------------------------------------------
 // http core functions
 //--------------------------------------------------------------------------------------

@@ -124,6 +124,7 @@ func NewNests(xmin float64, ymin float64, xmax float64, ymax float64, nbs []int,
 		selectedNest:  1,
 		period:        10000,
 		log:           false,
+		foods:         make([]*Food, 0, 0),
 		statTrain:     newStats(nil, nil),
 		statDecision:  newStats(nil, nil),
 		statReinforce: newStats(nil, nil),
@@ -147,7 +148,6 @@ func NewNests(xmin float64, ymin float64, xmax float64, ymax float64, nbs []int,
 	nests.worseAnt = nests.worseNest.worseAnt
 	nests.attractors = newAttractors()
 	nests.ready = true
-	//nests.addFoods(foodNb, foodGroupNb)
 	return nests, nil
 }
 
@@ -426,17 +426,13 @@ func (ns *Nests) GetNetwork(nestID int, antID int) (*network.MLNetwork, error) {
 	return ns.nests[nestID-1].ants[antID-1].network, nil
 }
 
-func (ns *Nests) addFoods(nb int, gnb int) {
-	ns.foods = make([]*Food, 0, 0)
-	for gg := 0; gg < gnb; gg++ {
-		gx := ns.xmin + float64(ns.xmax-ns.xmin)*.2 + rand.Float64()*float64(ns.xmax-ns.xmin)*.6
-		gy := ns.ymin + float64(ns.ymax-ns.ymin)*.2 + rand.Float64()*float64(ns.ymax-ns.ymin)*.6
-		for ii := 0; ii < nb; ii++ {
-			food := &Food{
-				X: gx + rand.Float64()*20,
-				Y: gy + rand.Float64()*20,
-			}
-			ns.foods = append(ns.foods, food)
+// AddFoods .
+func (ns *Nests) AddFoods(gx float64, gy float64) {
+	for ii := 0; ii < 10; ii++ {
+		food := &Food{
+			X: gx + rand.Float64()*20,
+			Y: gy + rand.Float64()*20,
 		}
+		ns.foods = append(ns.foods, food)
 	}
 }
