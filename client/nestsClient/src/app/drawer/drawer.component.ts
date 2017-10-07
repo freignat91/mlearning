@@ -16,6 +16,7 @@ export class DrawerComponent {
   timer : any
   visionSize = 8
   display = true
+  speed = 100
 
 
   constructor(private httpService : HttpService, private sessionService : SessionService) {
@@ -27,7 +28,7 @@ export class DrawerComponent {
     sessionService.onStart.subscribe(
       data => {
         clearInterval(this.timer)
-        this.timer = setInterval(this.getData.bind(this), 100);
+        this.timer = setInterval(this.getData.bind(this), this.speed);
       }
     )
     sessionService.onStop.subscribe(
