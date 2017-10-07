@@ -18,11 +18,13 @@ const httpRetryNumber = 3
 export class HttpService {
   private token = ""
   onHttpError = new Subject();
-  //default dev debug url
-  addr = "http://localhost:3001/api/v1"
+  //addr = "http://localhost:3001/api/v1"
+  addr : string
 
 
   constructor(private http : Http) {
+    this.addr = "http://"+window.location.host+"/api/v1"
+    console.log(this.addr)
   }
 
   getData() {
