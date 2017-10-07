@@ -187,13 +187,14 @@ For the 0.0.2 the happiness will be compute the same way but inverse for food, m
 This project use a server written in Go and an Angular 4 client.
 
 Pre-requisite are:
-- golang 1.8 installed
+- golang 1.8 installed (with golint)
 - git installed
+- make
 
 To install and build:
 
 - clone the git project: https://github.com/freignat91/mlearning on your $GOPATH and execute these commandes:
-  - cd $GOPATH
+  - cd $GOPATH/src/github.com/freignat91 (create it)
   - git clone git@github.com:freignat91/mlearning
 - build the project, executing this commands:
   - cd $GOPATH/mlearning
