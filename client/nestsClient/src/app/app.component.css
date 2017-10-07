@@ -1,0 +1,27 @@
+.title {
+  color: red;
+  font-weight: bold;
+  border-bottom-style: solid;
+  border-bottom-color: black;
+  border-bottom-width: 1px;
+}
+
+
+td {
+  padding: 0px 8px 0px 8px;
+  color: blue;
+  border-right-style: solid;
+  border-left-style: solid;
+  border-right-color: black;
+  border-left-color: black;
+  border-left-width: 1px;
+  border-right-width: 1px;
+}
+
+.sep {
+  height: 15px;
+}
+
+a {
+  cursor: pointer;
+}

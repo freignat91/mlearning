@@ -1,0 +1,20 @@
+package: github.com/freignat91/mlearning
+import:
+- package: github.com/fatih/color
+  version: ^1.5.0
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+- package: github.com/gorilla/mux
+  version: ^1.5.0
+- package: github.com/phyber/negroni-gzip
+  subpackages:
+  - gzip
+- package: github.com/spf13/cobra
+- package: github.com/urfave/negroni
+  version: ^0.2.0
+- package: golang.org/x/net
+  subpackages:
+  - context
+- package: google.golang.org/grpc
+  version: ^1.6.0
