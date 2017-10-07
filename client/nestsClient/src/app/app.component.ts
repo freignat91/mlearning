@@ -137,8 +137,9 @@ export class AppComponent {
    }
 
    setSleep(value) {
+     //console.log(value+": "+this.speed)
      this.speed = this.speed * value
-     if (this.speed <0) {
+     if (this.speed <1) {
        this.speed = 0
      }
      if (value == 2 && this.speed == 0) {
