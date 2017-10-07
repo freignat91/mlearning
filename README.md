@@ -217,7 +217,7 @@ To start server execute the command: `mlserver`
 To see the UI, open a Chrome (tested only on Chrome for now) and enter url: localhost:3001
 
 Then you can:
-  - start/stop the simulation
+  - start/stop the simulation and use "next step" button to move tick after tick and see result
   - speed up/down the server (down to be able to see the moves, up to let train the network faster)
   - click on an ant on the graphical representation select it
   - export max 10000 trained sample of the selected ant to file (the file is created on server side ./test/testant.json)
