@@ -187,7 +187,7 @@ For the 0.0.2 the happiness will be compute the same way but inverse for food, m
 This project use a server written in Go and an Angular 4 client.
 
 Pre-requisite are:
-- golang 1.8 installed (with golint)
+- golang 1.8 installed (with golint, to install golint: `go get -u github.com/golang/lint/golint`)
 - git installed
 - make
 
