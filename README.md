@@ -195,7 +195,7 @@ To install and build:
 
 - clone the git project: https://github.com/freignat91/mlearning on your $GOPATH and execute these commandes:
   - cd $GOPATH/src/github.com/freignat91 (create it)
-  - git clone git@github.com:freignat91/mlearning
+  - git clone git://github.com/freignat91/mlearning
 - build the project, executing this commands:
   - cd $GOPATH/mlearning
   - make
