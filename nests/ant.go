@@ -289,7 +289,7 @@ func (a *Ant) updateEntries(ns *Nests) {
 	}
 	a.printf(ns, "closest food: %+v\n", foodMin)
 	if foodMin != nil {
-		a.entryMode = 2
+		//a.entryMode = 2
 		if dist2m < 4 {
 			a.carryFood = foodMin
 			foodMin.carried = true
@@ -322,7 +322,7 @@ func (a *Ant) updateEntries(ns *Nests) {
 		}
 	}
 	if pheMin != nil {
-		a.entryMode = 3
+		//a.entryMode = 3
 		if a.lastPheromone == pheMin.id {
 			a.lastPheromoneCount++
 		} else {
@@ -362,7 +362,7 @@ func (a *Ant) updateEntries(ns *Nests) {
 		}
 	}
 	if antMin != nil {
-		a.entryMode = 1
+		//a.entryMode = 1
 		ang := math.Atan2(antMin.x-a.x, antMin.y-a.y)
 		if ang < 0 {
 			ang = 2*math.Pi + ang
@@ -428,7 +428,7 @@ func (a *Ant) moveOnOut(ns *Nests) {
 			ns.addPheromone(a.x, a.y, a.pheromoneCount)
 			a.pheromoneDelay = ns.pheromoneAntDelay
 		}
-		if (a.nest.x-a.x)*(a.nest.x-a.x)+(a.nest.y-a.y)*(a.nest.y-a.y) < 2200 {
+		if (a.nest.x-a.x)*(a.nest.x-a.x)+(a.nest.y-a.y)*(a.nest.y-a.y) < 4000 {
 			a.nest.statFood.incr()
 			fg := ns.foodGroups[rand.Int31n(int32(len(ns.foodGroups)))]
 			if ns.foodRenew {

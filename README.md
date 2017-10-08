@@ -240,6 +240,9 @@ Then you can:
     - "Restart": start a new simulation from the beginning
     - "Export sample": export max 10000 trained sample of the selected ant to file (the file is created on server side ./test/testant.json)
 
+The red circle show the ants witch contact one to another, back circle show the vision circle of the selected ant.
+The blue spots are the foods and the back/grey dash are the pheromones.
+
 The UI shows the graphical simulation on the left and information on the right:
 
 Information are for instance:
@@ -271,7 +274,7 @@ where:
   - Timer is the tick number (one tick compute one move for all the ants) and the number of ticks per second
   - update networks: the updated (copied) networks
   - train number: the number of time the networks have been trained
-  - good decision rate: the good decisions % (good decisions / total decisions)
+  - decision rate: the good decisions % (good decisions / total decisions)
 - for the current period (2 sec), total and for the selected ant:
   - contact: the number of ant contacts (less than the max vision length / 2)
   - train number: the number of time the networks have been trained
@@ -280,12 +283,12 @@ where:
   - negative decision fading: the number of fading train after a bas decision
   - update networks: the updated (copied) networks
   - train number: the number of time the networks have been trained
-  - good decision rate: the good answers % (good decisions / total decisions)
+  - decision rate: the good answers % (good decisions / total decisions)
 - for networks assessment, worse or best:
   - ant id of network (clicking on it, it selects it)
   - structure: structure of the networks (number of neurons per layer)
   - distinct decisions: distinct number of decision the network can taken
-  - good decision rate: the good decisions % of the network (good decisions / total decisions)
+  - decision rate: the good decisions % of the network (good decisions / total decisions)
 
 
 ## command line

@@ -84,7 +84,7 @@ export class DrawerComponent {
     for (let obj of this.sessionService.data.foods) {
       //console.log(obj)
       ctx.beginPath();
-      ctx.fillStyle="red";
+      ctx.fillStyle="blue";
       ctx.fillRect(obj.x, obj.y, 3, 3)
     }
     for (let obj of this.sessionService.data.ants) {
