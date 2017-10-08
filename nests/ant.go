@@ -49,6 +49,8 @@ type Ant struct {
 	pheromoneCount     int
 	lastPheromone      int
 	lastPheromoneCount int
+	entryMode          int
+	lastEntryMode      int
 	//
 	decTmp []int
 }
@@ -219,7 +221,7 @@ func (a *Ant) update(ns *Nests) {
 			a.setNetwork(ns)
 			a.statNetwork.incr()
 			a.printf(ns, "recreate new random network: %v\n", a.networkDef)
-		} else if a.dirCount < ns.bestAnt.dirCount-4 || (a.dirCount <= ns.bestAnt.dirCount && a.gRate < ns.bestAnt.gRate-20) {
+		} else if a.dirCount < ns.bestAnt.dirCount-4 || (a.dirCount <= ns.bestAnt.dirCount && a.gRate < ns.bestAnt.gRate-10) {
 			net, err := ns.bestAnt.network.Copy()
 			if err == nil {
 				a.network = net
@@ -272,6 +274,7 @@ func (a *Ant) updateEntries(ns *Nests) {
 	dist2Max := a.vision * a.vision
 	var antMin *Ant
 	a.contact = false
+	a.lastEntryMode = a.entryMode
 	//search food
 	dist2m := dist2Max
 	var foodMin *Food
@@ -286,6 +289,7 @@ func (a *Ant) updateEntries(ns *Nests) {
 	}
 	a.printf(ns, "closest food: %+v\n", foodMin)
 	if foodMin != nil {
+		a.entryMode = 2
 		if dist2m < 4 {
 			a.carryFood = foodMin
 			foodMin.carried = true
@@ -318,6 +322,7 @@ func (a *Ant) updateEntries(ns *Nests) {
 		}
 	}
 	if pheMin != nil {
+		a.entryMode = 3
 		if a.lastPheromone == pheMin.id {
 			a.lastPheromoneCount++
 		} else {
@@ -357,6 +362,7 @@ func (a *Ant) updateEntries(ns *Nests) {
 		}
 	}
 	if antMin != nil {
+		a.entryMode = 1
 		ang := math.Atan2(antMin.x-a.x, antMin.y-a.y)
 		if ang < 0 {
 			ang = 2*math.Pi + ang
@@ -465,7 +471,7 @@ func (a *Ant) moveOnOut(ns *Nests) {
 }
 
 func (a *Ant) train(ns *Nests) bool {
-	if ns.random || a.lastDecision < 0 {
+	if ns.random || a.lastDecision < 0 || a.lastEntryMode != a.entryMode {
 		return false
 	}
 	//fmt.Printf("%d  entries: %v\n", a.id, a.lastEntries)
@@ -490,7 +496,7 @@ func (a *Ant) train(ns *Nests) bool {
 }
 
 func (a *Ant) fadeLastDecision(ns *Nests) bool {
-	if ns.random || a.lastDecision == -1 {
+	if ns.random || a.lastDecision == -1 || a.entryMode != a.lastEntryMode {
 		return false
 	}
 	ins, ok := a.preparedEntries(a.lastEntries)

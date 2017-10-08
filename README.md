@@ -76,7 +76,7 @@ this time, the network structures are not chosen anymore, the best ones will eme
 
 All this way of working works for the initial ant spread purpose, but should also works for all the others:  find food, trace up pheromones, fight, ...
 
-Currently the version 0.0.1 (spread) is achieved and works enough well to move to version 0.0.2, but not sure to keep one network per ant, perhaps one network per task with a meta-network to activate the task networks considering a meta happiness. to be see...
+Currently the version 0.0.1 (spread) is achieved and works with a good level of network convergence and about 80% of good decisions, the version 0.0.2 (foods and pheromones) works well, but the level of converge is less good. Study is on going to improve that.
 
 
 # Ant networks structures
