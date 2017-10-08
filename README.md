@@ -194,16 +194,16 @@ On the version 0.0.2 the computation of the happiness for each ant is:
 
 # Install and build
 
-This project use a server written in Go and an Angular 4 client.
+This project uses a server written in Go and an Angular 4 client.
 
-Pre-requisite are:
+Pre-requisites are:
 - golang 1.8 installed (with golint, to install golint: `go get -u github.com/golang/lint/golint`)
 - git installed
 - make
 
 To install and build:
 
-- clone the git project: https://github.com/freignat91/mlearning on your $GOPATH and execute these commandes:
+- clone the git project: https://github.com/freignat91/mlearning on your $GOPATH and execute these commands:
   - cd $GOPATH/src/github.com/freignat91 (create it)
   - git clone git://github.com/freignat91/mlearning
 - build the project, executing this commands:
@@ -230,10 +230,13 @@ To see the UI, open a Chrome (tested only on Chrome for now) and enter url: loca
 Then you can:
   - start/stop the simulation and use "next step" button to move tick after tick and see result
   - speed up/down the server (down to be able to see the moves, up to let train the network faster)
-  - click on an ant on the graphical representation select it
-  - click on "AddFoods" button and then on the virtual space to add a new food group
-  - click on "Stop food renew" to stop the food to be replace in the clicked groups when they reach the nest
-  - click on "Start food renew" to replace food in the clicked groups and have automatic replacement
+  - Button "Stop renew"/"start renew" is a toggle to:
+    - stop the food to be replaced in the existing groups when they reach the nest
+    - start to replace food in the existing groups when they reach the nest
+  - Button "clear group", remove all existing food groups
+  - two click modes are possibles:
+    - click on "Select ant" button and then on the graphic space to select an ant
+    - click on "AddFoods" button and then on the graphic space to add a food group
   - menu "File":
     - "Restart": start a new simulation from the beginning
     - "Export sample": export max 10000 trained sample of the selected ant to file (the file is created on server side ./test/testant.json)
