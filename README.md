@@ -14,7 +14,7 @@ version 0.0.1 done: Ants are able to spread the virtual space in order to cover 
 
 version 0.0.2 done: Foods appears in the space, ants are able to get them and bring back them to the nest, letting a pheromone path and other ants are able to trace back the a pheromone path to find food sources
 
-version 0.0.3: with two nests, ants should be able to fight agains ants of the other nest.
+version 0.0.3: with two nests, ants will be able to fight agains ants of the other nest.
 
 
 # Way of working
@@ -36,13 +36,13 @@ This loop appeared not to be enough in order to make the network converging to s
 
 Then it's possible to add the following step:
 
-- if the computed happiness is lower than the previous one, train the network with the previous entry and a fading output computing using the chosen direction (see chapter `fade decision`)
+- if the computed happiness is lower than the previous one, train the network with the previous entry and a fading output computed using the chosen direction (see chapter `fade decision`)
 
 With this additional rule, the network started to converge well, but a new issue appeared:
 
-Because of the fading, the networks result become more and more poor, meaning, the number of the distinct possible output decisions lower. For instance a network shows only 3 directions no matter the entries, where it should be able to show 8.
+Because of the fading, the networks results become more and more poor, meaning, the number of the distinct possible output decisions lower. For instance a network shows only 3 directions no matter the entries, where it should be able to show 8.
 
-At the end, all the ants finished to move to only 2 directions, even if they reached the assigned goal: they cover all the virtual space and the contacts number lower to 0, it's not good for the next version purpose.
+At the end, all the ants finished to move to only 2 directions, even if they reached the assigned goal of the version 0.0.1: they cover all the virtual space and the contacts number lower to 0, it's not good for the next version purpose.
 
 Hopefully, it's possible to enrich the network decision capability to counter-balance the fade effect. To do that, let's use the following algorithm:
 
@@ -50,16 +50,16 @@ On regular basis (every 1000 or 10000 ticks), for each ant:
 - compute the statistical network output distribution, for each possible decision: the number of time the decision has been taken in the period
 - when decision has to be taken using network output:
   - compute the regular decision as usual (see chapter `take decision on output`)
-  - look at the immediate other direction (+1 and -1 regarding the regular chosen one) and if they haven't been take more than a given time (100 for now), then take this decision instead of the regular one.
+  - look at the immediate other directions (+1 and -1 regarding the regular chosen one) and if they haven't been taken more than a given time (100 for now), then take this decision instead of the regular one.
   - This decision will be as usual reinforced or fade considering its consequence
 
-This way, we train networks on decision it doesn't show too much on its regular way. If the "forced" decisions appear to be good, they will be naturally reinforced and then their statistical distribution will be better (>100) and then they become regular decisions.
+This way, we train networks on decisions it doesn't show too much on its regular way. If the "forced" decisions appear to be good, they will be naturally reinforced and then their statistical distribution will be better (>100) and then they become regular decisions.
 
-Then, the networks are now able to converge to use about all their decision capability.
+The networks are now able to converge and use about all their decision capability.
 
-Now, there is another issue: We don't all which network structure it should be used. 3 layers, 4 layers? how many neurones by layer?
+Now, there is another issue: We don't know which network structure(s) should be used. 3 layers, 4 layers? how many neurones by layer?
 
-The fist tested network were empirically set at the beginning finding that a network 8-7-8 is not bad for the purpose (see chapter `ant network structure`), but perhaps 8-30-100-8 is better...
+The first tested network were empirically set at the beginning finding that a network 8-7-8 is not bad for the purpose (see chapter `ant network structure`), but perhaps 8-30-100-8 is better...
 
 Then, it's possible to add a mechanism to have a natural network structure selection using this way of working:
 
