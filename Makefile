@@ -1,4 +1,4 @@
-.PHONY: all clean install fmt check version build run test
+.PHONY: all clean install fmt version build run test
 
 SHELL := /bin/sh
 BASEDIR := $(shell echo $${PWD})
@@ -32,7 +32,7 @@ CLI := ml
 ENGINE := mlserver
 TESTS := tests
 
-all: version check install
+all: version install
 
 version:
 	@echo "version: $(VERSION) (build: $(BUILD))"
