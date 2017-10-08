@@ -23,19 +23,23 @@ func (a *Ant) distFood2(f *Food) float64 {
 	return (f.X-a.x)*(f.X-a.x) + (f.Y-a.y)*(f.Y-a.y)
 }
 
+func (a *Ant) distPhe2(p *Pheromone) float64 {
+	return (p.X-a.x)*(p.X-a.x) + (p.Y-a.y)*(p.Y-a.y)
+}
+
 func (a *Ant) printf(ns *Nests, format string, args ...interface{}) {
 	if ns.log && a.id == ns.selected {
 		fmt.Printf(format, args...)
 	}
 }
 
-func (a *Ant) displayList(ns *Nests, list []float64) string {
+func (a *Ant) displayList(ns *Nests, list []float64, format string) string {
 	if a.id != ns.selected {
 		return ""
 	}
 	ret := "[ "
 	for _, val := range list {
-		ret += fmt.Sprintf("%.3f ", val)
+		ret += fmt.Sprintf(format+" ", val)
 	}
 	return ret + "]"
 }

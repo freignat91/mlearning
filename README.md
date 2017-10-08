@@ -1,6 +1,6 @@
 # Ants Machine learning
 
-mlearning v0.0.2 on going
+mlearning v0.0.2
 
 # Purpose
 
@@ -12,11 +12,9 @@ Use the virtual ant context to train the networks, train the networks permanentl
 
 version 0.0.1 done: Ants are able to spread the virtual space in order to cover all the available space without having contact between them. The ants avoid each other
 
-version 0.0.2 on going: Foods will appear in the space, ants should be able to get them and bring back them to the nest, letting a pheromone path
+version 0.0.2 done: Foods appears in the space, ants are able to get them and bring back them to the nest, letting a pheromone path and other ants are able to trace back the a pheromone path to find food sources
 
-version 0.0.3: Ants should be able to trace back the a pheromone path to find food sources
-
-version 0.0.4: with two nests, ants should be able to fight agains ants of the other nest.
+version 0.0.3: with two nests, ants should be able to fight agains ants of the other nest.
 
 
 # Way of working
@@ -96,13 +94,15 @@ and so on...
 
 The server is able to run with any precision number, 8 appeared to be enough and fast, but the server can be re-build to run with 12, 16 or 32 neurons in the input layer if needed.
 
-The first 8 neurons in the input layer activate itself when another ant appears in its quadrant, more the ant is close more the neuron is activated from 0 to 1.
+The first 8 neurons in the input layer activate itself when another ants appears in its quadrant, more the ant is close more the neuron is activated from 0 to 1.
 
-The 9 to 15 neurons in the input layer activate itself when food appears in its quadrant, more the food is close more the neuron is activated from 0 to 1.
+The 9 to 15 neurons in the input layer activate itself when foods appears in its quadrant, more the food is close more the neuron is activated from 0 to 1.
+
+The 16 to 24 neurons in the input layer activate itself when pheromones appears in its quadrant, more the food is close more the neuron is activated from 0 to 1.
 
 An ant has a maximum distance of vision, so an input neuron starts to activate itself when another ant or food enters inside the circle of vision and in the associated neuron quadrant
 
-It'll be the same for pheromone, hostile ant, for next version, but each kind of object to detect will have its own circle of neurons. So 8 for friend ants, 8 for food, 8 for pheromones, 8 for hostile ants detection.
+It'll be the same for hostile ant, for version 0.0.3, so each kind of object to detect will have its own circle of neurons, 8 for friend ants, 8 for food, 8 for pheromones, 8 for hostile ants detection.
 
 
 ## output layer
@@ -180,9 +180,18 @@ For the 0.0.1 version, the happiness of a ant is as greater as it sees no other 
 
 On the version 0.0.1 the computation of the happiness for each ant is:
 - find all the ants inside the field vision
-- sum the distance of these ants (in fact the power 2 of the distance, no need to compute the sqrt)
+- sum the distance of these ants (in fact the power 2 of the distance)
 
-For the 0.0.2 the happiness will be compute the same way but inverse for food, more the food is close and more there are foods, more the happiness of a ant raise.
+On the version 0.0.2 the computation of the happinees for each ant is:
+- find all the foods inside the field vision
+- sum the distance of these foods (in fact the power 2 of the distance)
+- if this sum if > 0 stop there
+- find the pheromones inside the field vision having the lower level (pheromone evaporate themselves with time)
+- sum the distance of these pheromones (in fact the power 2 of the distance)
+- if this sum if > 0 stop there
+- find all the ants inside the field vision
+- sum the distance of these ants (in fact the power 2 of the distance)
+- if this sum if > 0 stop there
 
 
 # Install and build

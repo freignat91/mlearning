@@ -23,6 +23,7 @@ export class AppComponent {
   logLevel = 1
   timer : any
   info : any
+  foodRenew = "Stop food renew"
 
   constructor(private httpService : HttpService, private sessionService : SessionService) {
     sessionService.onStart.subscribe(
@@ -171,16 +172,41 @@ export class AppComponent {
    tmp() {
    }
 
+   clickEvent(evt : MouseEvent) {
+     if (this.sessionService.mode == "select") {
+       this.selectItem(evt)
+       return
+     } else if (this.sessionService.mode == "setfoodGroup") {
+       this.setFoodGroup(evt)
+     }
+   }
+
+   setFoodGroup(evt : MouseEvent) {
+     let x = evt.clientX - 7
+     let y = evt.clientY- 60
+     let xr = x * this.sessionService.xmax / this.sessionService.width + this.sessionService.xmin
+     let yr = y * this.sessionService.ymax / this.sessionService.height + this.sessionService.ymin
+     this.sessionService.mode = "select"
+     this.httpService.addFoods(xr, yr).subscribe(
+       data => {
+         console.log("foods added")
+       },
+       error => {
+         console.log(error)
+       }
+     )
+   }
+
    selectItem(evt : MouseEvent) {
      let x = evt.clientX - 7
      let y = evt.clientY- 60
      let xr = x * this.sessionService.xmax / this.sessionService.width + this.sessionService.xmin
      let yr = y * this.sessionService.ymax / this.sessionService.height + this.sessionService.ymin
      let selectedAnt = null
-     let distm = -1
-     for (let ant of this.sessionService.data) {
+     let distm = 100000000
+     for (let ant of this.sessionService.data.ants) {
        let dist = (ant.x - xr)*(ant.x - xr)+(ant.y - yr)*(ant.y - yr)
-       if (distm==-1 || dist<distm) {
+       if (dist<distm) {
          distm = dist
          selectedAnt = ant
        }
@@ -193,19 +219,30 @@ export class AppComponent {
    }
 
    addFoods(evt : MouseEvent) {
-     //let x = evt.clientX - 7
-     //let y = evt.clientY- 60
-     //let xr = x * this.sessionService.xmax / this.sessionService.width + this.sessionService.xmin
-     //let yr = y * this.sessionService.ymax / this.sessionService.height + this.sessionService.ymin
-     let xr = 250
-     let yr = 250
-     this.httpService.addFoods(xr, yr).subscribe(
-       data => {
-         console.log("foods added")
-       },
-       error => {
-         console.log(error)
-       }
-     )
+     this.sessionService.mode = "setfoodGroup"
+   }
+
+   toggleFoodRenew() {
+     if (this.foodRenew == "Stop food renew") {
+       this.httpService.foodRenew(false).subscribe(
+         data => {
+           console.log("food renew stopped")
+         },
+         error => {
+           console.log(error)
+         }
+       )
+       this.foodRenew = "Start food renew"
+     } else {
+       this.httpService.foodRenew(true).subscribe(
+         data => {
+           console.log("food renew started")
+         },
+         error => {
+           console.log(error)
+         }
+       )
+       this.foodRenew = "Stop food renew"
+     }
    }
 }

@@ -16,6 +16,12 @@ func newStats(ns *Stats, n *Stats) *Stats {
 	}
 }
 
+func newNestStats(ns *Stats) *Stats {
+	return &Stats{
+		nests: ns,
+	}
+}
+
 func (s *Stats) incr() {
 	s.value++
 	s.scumul++

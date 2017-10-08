@@ -81,6 +81,12 @@ export class DrawerComponent {
     ctx.lineWidth = 1;
     ctx.clearRect(-1,-1,this.sessionService.width+1, this.sessionService.height+1);
 
+    for (let obj of this.sessionService.data.foods) {
+      //console.log(obj)
+      ctx.beginPath();
+      ctx.fillStyle="red";
+      ctx.fillRect(obj.x, obj.y, 3, 3)
+    }
     for (let obj of this.sessionService.data.ants) {
       //console.log(obj)
       let angle = (Math.PI*2*obj.direction)/this.visionSize
@@ -104,11 +110,17 @@ export class DrawerComponent {
         ctx.stroke();
       }
     }
-    for (let obj of this.sessionService.data.foods) {
+    //console.log(this.sessionService.data.pheromones)
+    for (let obj of this.sessionService.data.pheromones) {
       //console.log(obj)
-      ctx.beginPath();
-      ctx.fillStyle="red";
-      ctx.fillRect(obj.x, obj.y, 3, 3)
+      if (obj.level>0) {
+        ctx.beginPath();
+        ctx.fillStyle="black";
+        //ctx.strokeStyle="black";
+        //ctx.moveTo(obj.x, obj.y)
+        //ctx.lineTo(obj.x, obj.y)
+        ctx.fillRect(obj.x, obj.y, 1, 1)
+      }
     }
   }
 

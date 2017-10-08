@@ -14,6 +14,7 @@ type Nest struct {
 	statFade      *Stats
 	statNetwork   *Stats
 	statContact   *Stats
+	statFood      *Stats
 	bestAnt       *Ant
 	worseAnt      *Ant
 	happiness     float64
@@ -29,6 +30,7 @@ func newNest(ns *Nests, id int, nb int) (*Nest, error) {
 		statFade:      newStats(nil, nil),
 		statNetwork:   newStats(nil, nil),
 		statContact:   newStats(nil, nil),
+		statFood:      newNestStats(ns.statFood),
 	}
 	if rand.Float64() < 0.5 {
 		nest.x = ns.xmin + 25
@@ -59,7 +61,7 @@ func (n *Nest) nextTime(ns *Nests) {
 	h := 0.0
 	for _, ant := range n.ants {
 		ant.nextTime(ns)
-		h += ant.hapiness
+		h += ant.happiness
 		if ant.dirCount > n.bestAnt.dirCount {
 			n.bestAnt = ant
 		} else if ant.dirCount == n.bestAnt.dirCount && ant.gRate > n.bestAnt.gRate {

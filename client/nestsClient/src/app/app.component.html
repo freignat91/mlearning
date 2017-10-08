@@ -49,6 +49,12 @@
               AddFoods
             </button>
 
+            <button type="button"
+              class="btn btn-primary"
+              (click)="toggleFoodRenew()">
+              {{ foodRenew }}
+            </button>
+
           </div>
         </div>
       </div>
@@ -63,7 +69,7 @@
   <div style="border-style:none;margin:5px;float:left">
     <div
       style="width:100%;height:100%;padding:0px;margin-left:5px">
-      <app-drawer #container (mouseup)='selectItem($event)' style="width:100%; height:100%;"></app-drawer>
+      <app-drawer #container (mouseup)='clickEvent($event)' style="width:100%; height:100%;"></app-drawer>
     </div>
   </div>
     <div style="float:left;margin:5px" *ngIf="info">
@@ -72,12 +78,14 @@
           <tr><td>Timer</td><td>{{ info.timer }}</td><td>{{ info.speed}} t/s</td></tr>
 
           <tr><td><div class="title">From the beginning</div></td><td><div class="title">Global</div></td><td><div class="title">Selected</div></td></tr>
+          <tr><td>Foods</td><td>{{ info.fromBeginningFoods }}</td><td></td></tr>
           <tr><td>Happiness</td><td>{{ info.global.happiness.toFixed(2) }}</td><td>{{ info.selected.happiness.toFixed(2) }}</td></tr>
           <tr><td>Updated network</td><td>{{ info.global.fromBeginningNetworkUpdated }}</td><td>{{ info.selected.fromBeginningNetworkUpdated }}</td></tr>
           <tr><td>Train number</td><td>{{ info.global.fromBeginningTrain }}</td><td>{{ info.selected.fromBeginningTrain }}</td></tr>
           <tr><td>Good decision rate</td><td>{{ info.global.fromBeginningGRate.toFixed(2) }}%</td><td>{{ info.selected.fromBeginningGRate.toFixed(2) }}%</td></tr>
 
           <tr><td><div class="title">Average on period</div></td><td></td><td></td></tr>
+          <tr><td>Foods</td><td>{{ info.periodFoods }}</td><td></td></tr>
           <tr><td>Contact</td><td>{{ info.global.contact }}</td><td>{{ info.selected.contact }}</td></tr>
           <tr><td>Train number</td><td>{{ info.global.train }}</td><td>{{ info.selected.train }}</td></tr>
           <tr><td>Decision</td><td>{{ info.global.decision }}</td><td>{{ info.selected.decision }}</td></tr>

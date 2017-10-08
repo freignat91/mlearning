@@ -12,31 +12,39 @@ import (
 
 //Nests .
 type Nests struct {
-	waiter       int
-	nbs          []int
-	nests        []*Nest
-	totalNumber  int64
-	attractors   *Attractors
-	xmin         float64
-	xmax         float64
-	ymin         float64
-	ymax         float64
-	stopped      bool
-	timeRef      int64
-	lastTimeRef  int64
-	speed        int64
-	random       bool
-	selectedNest int
-	selected     int
-	averageRate  float64
-	bestNest     *Nest
-	worseNest    *Nest
-	bestAnt      *Ant
-	worseAnt     *Ant
-	ready        bool
-	happiness    float64
-	dataSet      *network.MlDataSet
-	foods        []*Food
+	waiter               int
+	nbs                  []int
+	nests                []*Nest
+	totalNumber          int64
+	attractors           *Attractors
+	xmin                 float64
+	xmax                 float64
+	ymin                 float64
+	ymax                 float64
+	stopped              bool
+	timeRef              int64
+	lastTimeRef          int64
+	speed                int64
+	random               bool
+	selectedNest         int
+	selected             int
+	averageRate          float64
+	bestNest             *Nest
+	worseNest            *Nest
+	bestAnt              *Ant
+	worseAnt             *Ant
+	ready                bool
+	happiness            float64
+	dataSet              *network.MlDataSet
+	foods                []*Food
+	foodGroups           []*FoodGroup
+	foodRenew            bool
+	pheromones           []*Pheromone
+	pheromoneLevel       float64
+	pheromoneAntDelay    int
+	pheromoneGroup       float64
+	pheromoneFadeDelay   int
+	pheromoneFadeCounter int
 	//
 	log           bool
 	period        int64
@@ -46,12 +54,14 @@ type Nests struct {
 	statFade      *Stats
 	statNetwork   *Stats
 	statContact   *Stats
+	statFood      *Stats
 }
 
 // GraphicData .
 type GraphicData struct {
-	Ants  []*AntData `json:"ants"`
-	Foods []*Food    `json:"foods"`
+	Ants       []*AntData   `json:"ants"`
+	Foods      []*Food      `json:"foods"`
+	Pheromones []*Pheromone `json:"pheromones"`
 }
 
 //AntData .
@@ -91,6 +101,8 @@ type Infos struct {
 	WorseNetworkStruct   string  `json:"worseNetworkStruct"`
 	WorseNetworkGRate    float64 `json:"worseNetworkGRate"`
 	WorseNetworkDirCount int     `json:"worseNetworkDirCount"`
+	FromBeginningFoods   int64   `json:"fromBeginningFoods"`
+	PeriodFoods          int64   `json:"periodFoods"`
 }
 
 //Info .
@@ -111,26 +123,34 @@ type Info struct {
 //NewNests .
 func NewNests(xmin float64, ymin float64, xmax float64, ymax float64, nbs []int, foodNb int, foodGroupNb int) (*Nests, error) {
 	nests := &Nests{
-		xmin:          xmin,
-		ymin:          ymin,
-		xmax:          xmax,
-		ymax:          ymax,
-		waiter:        1,
-		nbs:           nbs,
-		nests:         make([]*Nest, len(nbs), len(nbs)),
-		stopped:       true,
-		random:        false, //to compate with random ant behavior
-		selected:      0,
-		selectedNest:  1,
-		period:        10000,
-		log:           false,
-		foods:         make([]*Food, 0, 0),
-		statTrain:     newStats(nil, nil),
-		statDecision:  newStats(nil, nil),
-		statReinforce: newStats(nil, nil),
-		statFade:      newStats(nil, nil),
-		statNetwork:   newStats(nil, nil),
-		statContact:   newStats(nil, nil),
+		xmin:               xmin,
+		ymin:               ymin,
+		xmax:               xmax,
+		ymax:               ymax,
+		waiter:             1,
+		nbs:                nbs,
+		nests:              make([]*Nest, len(nbs), len(nbs)),
+		stopped:            true,
+		random:             false, //to compate with random ant behavior
+		selected:           0,
+		selectedNest:       1,
+		period:             10000,
+		log:                true,
+		foods:              make([]*Food, 0, 0),
+		foodGroups:         make([]*FoodGroup, 0, 0),
+		foodRenew:          true,
+		pheromones:         make([]*Pheromone, 0, 0),
+		pheromoneLevel:     1000,
+		pheromoneAntDelay:  20,
+		pheromoneFadeDelay: 5,
+		pheromoneGroup:     100,
+		statTrain:          newStats(nil, nil),
+		statDecision:       newStats(nil, nil),
+		statReinforce:      newStats(nil, nil),
+		statFade:           newStats(nil, nil),
+		statNetwork:        newStats(nil, nil),
+		statContact:        newStats(nil, nil),
+		statFood:           newStats(nil, nil),
 	}
 	for _, nb := range nbs {
 		nests.totalNumber += int64(nb)
@@ -163,8 +183,9 @@ func (ns *Nests) GetGraphicData() *GraphicData {
 		nest.addData(&ants)
 	}
 	return &GraphicData{
-		Ants:  ants,
-		Foods: ns.foods,
+		Ants:       ants,
+		Foods:      ns.foods,
+		Pheromones: ns.pheromones,
 	}
 }
 
@@ -209,6 +230,7 @@ func (ns *Nests) NextTime() {
 	for _, nest := range ns.nests {
 		nest.nextTime(ns)
 		h += nest.happiness
+		ns.fadePheromones()
 		if nest.bestAnt.gRate > ns.bestNest.bestAnt.gRate {
 			ns.bestNest = nest
 		}
@@ -246,6 +268,7 @@ func (ns *Nests) commitPeriodStats() {
 		nest.statFade.push()
 		nest.statNetwork.push()
 		nest.statContact.push()
+		nest.statFood.push()
 	}
 	ns.statTrain.push()
 	ns.statDecision.push()
@@ -253,6 +276,7 @@ func (ns *Nests) commitPeriodStats() {
 	ns.statFade.push()
 	ns.statNetwork.push()
 	ns.statContact.push()
+	ns.statFood.push()
 }
 
 //SetSelected .
@@ -353,7 +377,7 @@ func (ns *Nests) GetInfo() *Infos {
 	if aa != nil {
 		aa.commitPeriodStats(ns)
 		selected = &Info{
-			Happiness:                   aa.hapiness,
+			Happiness:                   aa.happiness,
 			Train:                       aa.statTrain.cumul,
 			Reinforce:                   aa.statReinforce.cumul,
 			Fade:                        aa.statFade.cumul,
@@ -400,6 +424,8 @@ func (ns *Nests) GetInfo() *Infos {
 		WorseNetworkStruct:   fmt.Sprintf("%v", ns.worseAnt.network.Getdef()),
 		WorseNetworkGRate:    ns.worseAnt.gRate,
 		WorseNetworkDirCount: ns.worseAnt.dirCount,
+		FromBeginningFoods:   ns.statFood.scumul,
+		PeriodFoods:          ns.statFood.cumul,
 	}
 }
 
@@ -426,13 +452,55 @@ func (ns *Nests) GetNetwork(nestID int, antID int) (*network.MLNetwork, error) {
 	return ns.nests[nestID-1].ants[antID-1].network, nil
 }
 
-// AddFoods .
-func (ns *Nests) AddFoods(gx float64, gy float64) {
-	for ii := 0; ii < 10; ii++ {
-		food := &Food{
-			X: gx + rand.Float64()*20,
-			Y: gy + rand.Float64()*20,
-		}
+// AddFoodGroup .
+func (ns *Nests) AddFoodGroup(gx float64, gy float64) {
+	fg := &FoodGroup{x: gx, y: gy}
+	ns.foodGroups = append(ns.foodGroups, fg)
+	for ii := 0; ii < 20; ii++ {
+		food := newFood(fg)
 		ns.foods = append(ns.foods, food)
+	}
+}
+
+func (ns *Nests) addPheromone(x float64, y float64, id int) {
+	var free *Pheromone
+	for _, p := range ns.pheromones {
+		if p.Level <= 0 {
+			free = p
+		}
+		if (p.X-x)*(p.X-x)+(p.Y-y)*(p.Y-y) < ns.pheromoneGroup {
+			p.Level = ns.pheromoneLevel
+			return
+		}
+	}
+	if free != nil {
+		free.X = x
+		free.Y = y
+		free.Level = ns.pheromoneLevel
+		free.id = id
+		return
+	}
+	ns.pheromones = append(ns.pheromones, &Pheromone{X: x, Y: y, Level: ns.pheromoneLevel, id: id})
+}
+
+func (ns *Nests) fadePheromones() {
+	ns.pheromoneFadeCounter--
+	if ns.pheromoneFadeCounter < 0 {
+		ns.pheromoneFadeCounter = ns.pheromoneFadeDelay
+		for _, p := range ns.pheromones {
+			p.Level--
+		}
+	}
+}
+
+//FoodRenew .
+func (ns *Nests) FoodRenew(renew bool) {
+	ns.foodRenew = renew
+	if ns.foodRenew {
+		for _, f := range ns.foods {
+			fg := ns.foodGroups[rand.Int31n(int32(len(ns.foodGroups)))]
+			fg.setPosition(f)
+			f.carried = false
+		}
 	}
 }

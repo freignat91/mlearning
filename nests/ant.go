@@ -8,42 +8,47 @@ import (
 )
 
 var visionNb = 8
-var inNb = 16 //8 for ants, 8 for foods
+var inNb = 8 * 3 //8 for ants, 8 for foods, 8 for pheromones
 var outNb = 8
 
 // Ant .
 type Ant struct {
-	id            int
-	nestID        int
-	hapiness      float64
-	lastHapiness  float64
-	x             float64
-	y             float64
-	speed         float64
-	vision        float64
-	maxSpeed      float64
-	networkDef    []int
-	network       *network.MLNetwork
-	entries       []float64
-	lastEntries   []float64
-	outs          []float64
-	lastDecision  int
-	statTrain     *Stats
-	statDecision  *Stats
-	statReinforce *Stats
-	statFade      *Stats
-	statNetwork   *Stats
-	statContact   *Stats
-	direction     int
-	iner          int
-	gRate         float64
-	life          int64
-	dead          bool
-	contact       bool
-	edge          bool
-	dirMap        map[int]int
-	dirCount      int
-	distinctOuts  int
+	id                 int
+	nest               *Nest
+	happiness          float64
+	lastHappiness      float64
+	x                  float64
+	y                  float64
+	speed              float64
+	vision             float64
+	maxSpeed           float64
+	networkDef         []int
+	network            *network.MLNetwork
+	entries            []float64
+	lastEntries        []float64
+	outs               []float64
+	lastDecision       int
+	statTrain          *Stats
+	statDecision       *Stats
+	statReinforce      *Stats
+	statFade           *Stats
+	statNetwork        *Stats
+	statContact        *Stats
+	direction          int
+	iner               int
+	gRate              float64
+	life               int64
+	dead               bool
+	contact            bool
+	edge               bool
+	dirMap             map[int]int
+	dirCount           int
+	distinctOuts       int
+	carryFood          *Food
+	pheromoneDelay     int
+	pheromoneCount     int
+	lastPheromone      int
+	lastPheromoneCount int
 	//
 	decTmp []int
 }
@@ -51,6 +56,7 @@ type Ant struct {
 func newAnt(ns *Nests, n *Nest, id int) (*Ant, error) {
 	ant := &Ant{
 		id:            id,
+		nest:          n,
 		maxSpeed:      0.3, //+ rand.Float64()/10,
 		vision:        30,
 		x:             n.x + 20.0 - rand.Float64()*40,
@@ -123,21 +129,22 @@ func (a *Ant) nextTime(ns *Nests) {
 	a.displayInfo(ns)
 	a.moveOnOut(ns)
 	a.updateEntries(ns)
+	a.printf(ns, "happiness=%.3f entries: %s\n", a.happiness, a.displayList(ns, a.entries, "%.2f"))
 	if ns.random {
 		a.direction = int(rand.Int31n(int32(outNb)))
 	} else {
 		if ns.log && ns.selected == a.id {
-			a.printf(ns, "lastDecision:%d entrie: %s hapiness=%.5f delta=%.5f\n", a.lastDecision, a.displayList(ns, a.entries), a.hapiness, a.hapiness-a.lastHapiness)
+			a.printf(ns, "lastDecision:%d entrie: %s hapiness=%.5f delta=%.5f\n", a.lastDecision, a.displayList(ns, a.entries, "%.3f"), a.happiness, a.happiness-a.lastHappiness)
 		}
 		if a.iner < 0 {
-			if a.hapiness == a.lastHapiness && a.hapiness >= 0 {
+			if a.happiness == a.lastHappiness && a.happiness >= 0 {
 				a.iner = -1
 				a.printf(ns, "decision: no need\n")
-			} else if a.hapiness <= a.lastHapiness {
+			} else if a.happiness <= a.lastHappiness {
 				a.fadeLastDecision(ns)
-				if a.decided(ns) {
+				if a.decide(ns) {
 					if ns.log && ns.selected == a.id {
-						a.printf(ns, "decision using network: %d outs: %s\n", a.direction, a.displayList(ns, a.outs))
+						a.printf(ns, "decision using network: %d outs: %s\n", a.direction, a.displayList(ns, a.outs, "%.3f"))
 					}
 					a.statDecision.incr()
 				} else {
@@ -162,21 +169,24 @@ func (a *Ant) nextTime(ns *Nests) {
 	a.update(ns)
 }
 
-func (a *Ant) decided(ns *Nests) bool {
+func (a *Ant) decide(ns *Nests) bool {
 	if ns.random {
 		return false
 	}
 	if rand.Float64() < 0.1 {
 		//return false
 	}
+	if a.carryFood != nil {
+		return false
+	}
 	ins, ok := a.preparedEntries(a.entries)
 	if !ok {
-		a.printf(ns, "bad entries: %s\n", a.displayList(ns, a.entries))
+		a.printf(ns, "bad entries: %s\n", a.displayList(ns, a.entries, "%.3f"))
 		return false
 	}
 	a.outs = a.network.Propagate(ins, true)
 	if ns.log {
-		a.printf(ns, "Compute decision, propagation: %s\n", a.displayList(ns, a.outs))
+		a.printf(ns, "Compute decision, propagation: %s\n", a.displayList(ns, a.outs, "%.3f"))
 	}
 	direction := 0
 	max := 0.0
@@ -230,7 +240,7 @@ func (a *Ant) displayInfo(ns *Nests) {
 	if ns.log && a.id == ns.selected {
 		ggRate := float64(a.statReinforce.scumul) * 100.0 / float64(a.statDecision.scumul)
 		a.printf(ns, "[%d] totTrain: %d train:%d reinforce:%d fade:%d decision:%d period:good=%.2f%%) global:good=%.2f%%)\n", a.id, a.statTrain.scumul, a.statTrain.cumul, a.statReinforce.cumul, a.statFade.cumul, a.statDecision.cumul, a.gRate, ggRate)
-		a.printf(ns, "network=%v hapiness=%.5f move: %d\n", a.networkDef, a.hapiness, a.direction)
+		a.printf(ns, "network=%v hapiness=%.5f move: %d\n", a.networkDef, a.happiness, a.direction)
 	}
 }
 
@@ -256,23 +266,92 @@ func (a *Ant) updateEntries(ns *Nests) {
 		a.lastEntries[ii] = a.entries[ii]
 		a.entries[ii] = 0
 	}
+	if a.carryFood != nil {
+		return
+	}
 	dist2Max := a.vision * a.vision
-	dist2m := dist2Max
 	var antMin *Ant
 	a.contact = false
+	//search food
+	dist2m := dist2Max
+	var foodMin *Food
+	for _, food := range ns.foods {
+		if !food.carried {
+			dist2 := a.distFood2(food)
+			if dist2 < dist2m {
+				foodMin = food
+				dist2m = dist2
+			}
+		}
+	}
+	a.printf(ns, "closest food: %+v\n", foodMin)
+	if foodMin != nil {
+		if dist2m < 4 {
+			a.carryFood = foodMin
+			foodMin.carried = true
+			a.pheromoneCount = 0
+			return
+		}
+		ang := math.Atan2(foodMin.X-a.x, foodMin.Y-a.y)
+		if ang < 0 {
+			ang = 2*math.Pi + ang
+		}
+		index := int(ang*float64(visionNb)/2.0/math.Pi + 0.000001)
+		if index >= visionNb {
+			index = index - visionNb
+		}
+		a.entries[visionNb+index] = ((dist2Max - dist2m) / dist2Max)
+		a.computeHappiness(ns)
+		return
+	}
+	//search pheromones
+	minLevel := 100000
+	var pheMin *Pheromone
+	for _, phe := range ns.pheromones {
+		if phe.Level > 0 {
+			dist2 := a.distPhe2(phe)
+			if dist2 < dist2Max*1.5*1.5 && phe.id < minLevel {
+				dist2m = dist2
+				pheMin = phe
+				minLevel = phe.id
+			}
+		}
+	}
+	if pheMin != nil {
+		if a.lastPheromone == pheMin.id {
+			a.lastPheromoneCount++
+		} else {
+			a.lastPheromoneCount = 0
+		}
+		a.lastPheromone = pheMin.id
+		if a.lastPheromoneCount < 100 {
+			ang := math.Atan2(pheMin.X-a.x, pheMin.Y-a.y)
+			if ang < 0 {
+				ang = 2*math.Pi + ang
+			}
+			index := int(ang*float64(visionNb)/2.0/math.Pi + 0.000001)
+			if index >= visionNb {
+				index = index - visionNb
+			}
+			a.printf(ns, "better phe: %+v angle=%.4f index=%d level=%0.3f id=%d\n", pheMin, ang*180/math.Pi, index, pheMin.Level, pheMin.id)
+			a.entries[visionNb*2+index] = ((dist2Max - dist2m) / dist2Max)
+			a.computeHappiness(ns)
+			return
+		}
+	}
+	//search ants
+	dist2m = a.vision * a.vision
 	for _, nest := range ns.nests {
 		for _, ant := range nest.ants {
-			if ant != a {
+			if ant != a && ant.carryFood == nil {
 				dist2 := a.distAnt2(ant)
-				if dist2 < dist2Max {
-					if dist2 < dist2Max/4 {
-						a.statContact.incr()
-						a.contact = true
-					}
-					if dist2 < dist2m {
-						antMin = ant
-						dist2m = dist2
-					}
+				if dist2 < dist2Max/4 {
+					a.statContact.incr()
+					a.contact = true
+				}
+				if dist2 < dist2m {
+					antMin = ant
+					dist2m = dist2
 				}
 			}
 		}
@@ -289,49 +368,31 @@ func (a *Ant) updateEntries(ns *Nests) {
 		//a.printf(ns, "find %d angle=%0.2f degres=%0.2f index=%d\n", ant.id, ang, ang*180/math.Pi, index)
 		a.entries[index] = ((dist2Max - dist2m) / dist2Max)
 	}
-	dist2m = dist2Max
-	var foodMin *Food
-	for _, food := range ns.foods {
-		dist2 := a.distFood2(food)
-		if dist2 < dist2Max {
-			if dist2 < dist2Max/4 {
-				a.statContact.incr()
-				a.contact = true
-			}
-			if dist2 < dist2m {
-				foodMin = food
-				dist2m = dist2
-			}
-		}
-	}
-	if foodMin != nil {
-		ang := math.Atan2(foodMin.X-a.x, foodMin.Y-a.y)
-		if ang < 0 {
-			ang = 2*math.Pi + ang
-		}
-		index := int(ang*float64(visionNb)/2.0/math.Pi + 0.000001)
-		if index >= visionNb {
-			index = index - visionNb
-		}
-		//a.printf(ns, "find %d angle=%0.2f degres=%0.2f index=%d\n", ant.id, ang, ang*180/math.Pi, index)
-		a.entries[visionNb+index] = ((dist2Max - dist2m) / dist2Max)
-	}
-	a.computeHapiness(ns)
+	a.computeHappiness(ns)
 }
 
-func (a *Ant) computeHapiness(ns *Nests) {
+func (a *Ant) computeHappiness(ns *Nests) {
 	if a.edge {
-		a.hapiness = -.1
+		a.happiness = -.1
 		return
 	}
-	a.lastHapiness = a.hapiness
-	a.hapiness = 0
+	a.lastHappiness = a.happiness
+	a.happiness = 0
+	//if a.carryFood != nil {
+	//	a.happiness = float64((ns.xmax-ns.xmin)*(ns.xmax-ns.xmin)+(ns.ymax-ns.ymin)*(ns.ymax-ns.ymin)) / float64((a.nest.x-a.x)*(a.nest.x-a.x)+(a.nest.y-a.y)*(a.nest.y-a.y))
+	//	return
+	//}
 	for ii := visionNb; ii < visionNb*2; ii++ {
-		a.hapiness += a.entries[ii]
+		a.happiness += a.entries[ii]
 	}
-	if a.hapiness == 0 {
+	if a.happiness == 0 {
+		for ii := visionNb * 2; ii < visionNb*3; ii++ {
+			a.happiness += a.entries[ii]
+		}
+	}
+	if a.happiness == 0 {
 		for ii := 0; ii < visionNb; ii++ {
-			a.hapiness -= a.entries[ii]
+			a.happiness -= a.entries[ii]
 		}
 	}
 }
@@ -347,9 +408,35 @@ func (a *Ant) getDirIndex(nn int) int {
 }
 
 func (a *Ant) moveOnOut(ns *Nests) {
+	//for now the nest return is hard coded
+	if a.carryFood != nil {
+		dd := math.Sqrt(float64((a.nest.x-a.x)*(a.nest.x-a.x) + (a.nest.y-a.y)*(a.nest.y-a.y)))
+		a.x += (a.nest.x - a.x) / dd * a.speed
+		a.y += (a.nest.y - a.y) / dd * a.speed
+		a.carryFood.X = a.x
+		a.carryFood.Y = a.y
+		a.pheromoneDelay--
+		if a.pheromoneDelay <= 0 {
+			a.printf(ns, "add pheromone\n")
+			a.pheromoneCount++
+			ns.addPheromone(a.x, a.y, a.pheromoneCount)
+			a.pheromoneDelay = ns.pheromoneAntDelay
+		}
+		if (a.nest.x-a.x)*(a.nest.x-a.x)+(a.nest.y-a.y)*(a.nest.y-a.y) < 2200 {
+			a.nest.statFood.incr()
+			fg := ns.foodGroups[rand.Int31n(int32(len(ns.foodGroups)))]
+			if ns.foodRenew {
+				fg.setPosition(a.carryFood)
+				a.carryFood.carried = false
+			}
+			a.carryFood = nil
+		}
+		return
+	}
 	angle := (math.Pi * 2 * float64(a.direction)) / float64(outNb) //+ math.Pi/2
 	a.x += math.Sin(angle) * a.speed
 	a.y += math.Cos(angle) * a.speed
+
 	a.edge = false
 	if a.x < ns.xmin {
 		//a.x = ns.xmax
@@ -392,8 +479,8 @@ func (a *Ant) train(ns *Nests) bool {
 	//a.setOuts(a.soluce())
 	if ns.log && a.id == ns.selected {
 		trainResult := a.computeTrainResult(a.outs, outs)
-		a.printf(ns, "train %s => %v\n", a.displayList(ns, ins), a.outs)
-		a.printf(ns, "outs: %s result=%f\n", a.displayList(ns, outs), trainResult)
+		a.printf(ns, "train %s => %v\n", a.displayList(ns, ins, "%.0f"), a.outs)
+		a.printf(ns, "outs: %s result=%f\n", a.displayList(ns, outs, "%.3f"), trainResult)
 	}
 	if a.id == ns.selected {
 		ns.addSample(ins, a.outs)
@@ -414,8 +501,8 @@ func (a *Ant) fadeLastDecision(ns *Nests) bool {
 	a.setOutsFaded(a.lastDecision)
 	if ns.log && a.id == ns.selected {
 		trainResult := a.computeTrainResult(a.outs, outs)
-		a.printf(ns, "fade %s => %v\n", a.displayList(ns, ins), a.outs)
-		a.printf(ns, "outs: %s result=%.5f\n", a.displayList(ns, outs), trainResult)
+		a.printf(ns, "fade %s => %v\n", a.displayList(ns, ins, "%.0f"), a.outs)
+		a.printf(ns, "outs: %s result=%.5f\n", a.displayList(ns, outs, "%.3f"), trainResult)
 		ns.addSample(ins, a.outs)
 	}
 	a.network.BackPropagate(a.outs)

@@ -20,6 +20,7 @@ export class SessionService {
   onRedraw = new Subject();
   onStart = new Subject();
   onStop = new Subject();
+  mode = "select"
 
 
   constructor(private httpService : HttpService) {

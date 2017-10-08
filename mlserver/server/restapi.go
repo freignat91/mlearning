@@ -91,6 +91,14 @@ func (s *Server) addFoods(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var t FoodCoord
 	decoder.Decode(&t)
-	s.nests.AddFoods(t.X, t.Y)
+	s.nests.AddFoodGroup(t.X, t.Y)
+	json.NewEncoder(w).Encode("{}")
+}
+
+func (s *Server) foodRenew(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var t RetBool
+	decoder.Decode(&t)
+	s.nests.FoodRenew(t.Ret)
 	json.NewEncoder(w).Encode("{}")
 }

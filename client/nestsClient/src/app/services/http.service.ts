@@ -123,6 +123,13 @@ export class HttpService {
     )
   }
 
+  foodRenew(renew : boolean) {
+    return this.httpPost("/foodRenew", { ret: renew })
+      .map((res : Response) => {
+        return res.json()
+      }
+    )
+  }
 //--------------------------------------------------------------------------------------
 // http core functions
 //--------------------------------------------------------------------------------------
