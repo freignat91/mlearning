@@ -59,29 +59,28 @@ The networks are now able to converge and use about all their decision capabilit
 
 Now, there is another issue: We don't know which network structure(s) should be used. 3 layers, 4 layers? how many neurones by layer?
 
-The first tested network were empirically set at the beginning finding that a network 8-7-8 is not bad for the purpose (see chapter `ant network structure`), but perhaps 8-30-100-8 is better...
+The first tested networks were empirically set at the beginning, showing that a network 8-7-8 is not bad for the purpose of the version 0.0.1 (see chapter `ant network structure`), but perhaps 8-30-100-8 is better, especially for the next version purposes...
 
-Then, it's possible to add a mechanism to have a natural network structure selection using this way of working:
+Then, it's possible to add a mechanism to have a natural network structures selection using this way of working:
 
-- at the beginning each ant has a random network, random number of internal layers (for 1 to 2) having a random number of neurones (for now: for 5 to 50 for the first one and 5 to 30 for the second one if exist) and random synapses values. For now, the input and output layers have the same number of neurones for all ants, but it could be changed for future versions.
+- at the beginning each ant has a random network, random number of internal layers (for 1 to 2) having a random number of neurones (for now: for 5 to 50 for the first one and 5 to 30 for the second one if exist) and random synapses values. For now, the input and output layers have the same number of neurones in all ants, but it could be changed for future versions.
 - on regular basis (1000 or 10000 ticks), for each ant:
   - compute the maximum distinct decisions the network is able to take (let's call it `maxDecision`)
   - compute good decision rate: [number of decision on the period which raise the happiness] / [total number of decision on the period], let's call it `good decision rate`
 - on regular basis (100000 ticks) during the simulation:
   - find the best network of the nest (the one having first the best `maxDecision` and if equal the one having the best `good decision rate`)
   - for each ants:
-    - if its network `maxDecision` is lower for a factor 2 than the best network one and if not, if its `good decision rate` is lower for 20% than the best network one then: duplicate the best network with all it trained synapse coefficients and set it to a considered ant
+    - if its network `maxDecision` is lower for a factor 2 than the best network one and if not, if its `good decision rate` is lower for 10% than the best network one then: duplicate the best network with all it trained synapse coefficients and set it to a considered ant
 
 this time, the network structures are not chosen anymore, the best ones will emerge naturally
-
-All this way of working works for the initial ant spread purpose, but should also works for all the others:  find food, trace up pheromones, fight, ...
 
 Currently the version 0.0.1 (spread) is achieved and works with a good level of network convergence and about 80% of good decisions, the version 0.0.2 (foods and pheromones) works well, but the level of converge is less good. Study is on going to improve that.
 
 
 # Ant networks structures
 
-On version 0.0.1, the input and output layer have 8 neurons each. The networks have one or two internal hidden layers, having for 5 to 50 neurons for the first one and 5 to 30 for the second one. These numbers was arbitrary chosen at the beginning and proven not so bad by tests.
+On version 0.0.1, the input and output layer have 8 neurons each. On version 0.0.2, the input layer has 24 neurons and the output still 8.
+The networks have one or two internal hidden layers, having for 5 to 50 neurons for the first one and 5 to 30 for the second one. These numbers was arbitrary chosen at the beginning and proven not so bad by tests.
 
 ## input layer
 
@@ -140,10 +139,10 @@ This counter-balance the flattering effect given by the bad decision fading. see
 
 If we only reinforce the good decisions, the ones which raise the ant happiness, it takes too much time to the networks to converge and some of them can't converge because their random initial synapse values lead to only bad decisions.
 
-The idea, is to use also the bad decisions to train network. We have plenty of them more than good ones, especially at the beginning of the simulation.
+The idea is to use also the bad decisions to train network. We have plenty of them more than good ones, especially at the beginning of the simulation.
 
 For instance, we get an entry with input value [0, 1, 0, 0, 0, 0, 0, 0, 0] and the direction 2 decision is taken after having propagated it,
-The loop after, this decision appears to be bad, because after the move the ant happiness lower, so we need to fade this decision training the network with the opposite of what we got as output layer the first time.
+The loop after, this decision appears to be bad, because after the move the ant happiness lower, so we need to fade this decision training the network with the opposite of the chosen direction.
 
 The ideal output corresponding to the decision 2 is [0, 0, 1, 0, 0, 0, 0, 0, 0], so we can train the network using retro-propagation algorithm with the couple:
 
@@ -155,20 +154,19 @@ where x is a parameter, for now set to 0.3, but it has a great influence on the 
 Training several times the network this way, the network is forced to "forget" the decision.
 
 
-
 # The happiness of a ant
 
 To train a network, it needs samples, couples of input-output known are right for the purpose of the network.
 
-They aren't such samples in the ant networks case. In fact it could have, it's possible to made them especially in order to train networks on very effective way, but it's not the purpose of this project.
+They aren't such samples in the ant networks case. In fact it could have, it's possible to compute them especially in order to train networks on very effective way, but it's not the purpose of this project.
 
-In this project, it's supposed that, made artificial samples is not possible. It's in this case that the neuron networks are interesting, when the good answers emerge, not because of the validity of samples created by an external algorithm, but because we drive them using a high level parameter, ants happiness here.
+In this project, it's supposed that compute artificial samples is not possible. It's in this case that the neuron networks are interesting, when the good answers emerge, not because of the validity of samples created by an external algorithm, but because networks are driven using a high level parameter, ants happiness here.
 
 To achieve that:
 
 First, we get input data in the simulation context itself, in version 0.0.1 input of the networks are the ant visions so we have plenty inputs at out disposal just letting ants move.
 
-Second, after network propagation of this inputs, we need to assess if the output is a good one in order to reinforce or fade network outputs.
+Second, after network propagation of this inputs, we need to assess if the output is a good or a bad one in order to reinforce or fade network outputs.
 
 To do that, for each ant, at each ant move, the happiness of the ant is computed. if after a move the happiness is lower than the previous one, the output is considered as bad, if the happiness is higher the output is considered as good.
 
@@ -182,7 +180,7 @@ On the version 0.0.1 the computation of the happiness for each ant is:
 - find all the ants inside the field vision
 - sum the distance of these ants (in fact the power 2 of the distance)
 
-On the version 0.0.2 the computation of the happinees for each ant is:
+On the version 0.0.2 the computation of the happiness for each ant is:
 - find all the foods inside the field vision
 - sum the distance of these foods (in fact the power 2 of the distance)
 - if this sum if > 0 stop there
