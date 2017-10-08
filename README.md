@@ -233,7 +233,12 @@ Then you can:
   - start/stop the simulation and use "next step" button to move tick after tick and see result
   - speed up/down the server (down to be able to see the moves, up to let train the network faster)
   - click on an ant on the graphical representation select it
-  - export max 10000 trained sample of the selected ant to file (the file is created on server side ./test/testant.json)
+  - click on "AddFoods" button and then on the virtual space to add a new food group
+  - click on "Stop food renew" to stop the food to be replace in the clicked groups when they reach the nest
+  - click on "Start food renew" to replace food in the clicked groups and have automatic replacement
+  - menu "File":
+    - "Restart": start a new simulation from the beginning
+    - "Export sample": export max 10000 trained sample of the selected ant to file (the file is created on server side ./test/testant.json)
 
 The UI shows the graphical simulation on the left and information on the right:
 
