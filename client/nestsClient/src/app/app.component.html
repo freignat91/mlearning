@@ -43,10 +43,19 @@
               -
             </button>
 
+
+            Foods:
+
             <button type="button"
               class="btn btn-primary"
               (click)="toggleFoodRenew()">
               {{ foodRenew }}
+            </button>
+
+            <button type="button"
+              class="btn btn-primary"
+              (click)="clearFoodGroup()">
+              clear groups
             </button>
 
             Click mode:
@@ -105,7 +114,7 @@
           <tr><td>Decision rate</td><td>{{ info.global.periodGRate.toFixed(2) }}%</td><td>{{ info.selected.periodGRate.toFixed(2) }}%</td></tr>
 
           <tr class="sep"><td></td><td></td><td></td></tr>
-          <tr><td><div class="title">Networks</div></td><td><div class="title">Worse</div></td><td><div class="title">Best</div></td></tr>
+          <tr><td><div class="title">Neuron networks</div></td><td><div class="title">Worse</div></td><td><div class="title">Best</div></td></tr>
           <tr><td>Id</td><td><a (click)="select(info.worseId)">{{ info.worseId }}</a></td><td><a (click)="select(info.bestId)">{{ info.bestId }}</a></td></tr>
           <tr><td>Structure</td><td>{{ info.worseNetworkStruct }}</td><td>{{ info.bestNetworkStruct }}</td></tr>
           <tr><td>Distinct decisions</td><td>{{ info.worseNetworkDirCount }}</td><td>{{ info.bestNetworkDirCount }}</td></tr>

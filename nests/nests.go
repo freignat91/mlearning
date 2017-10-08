@@ -495,6 +495,9 @@ func (ns *Nests) fadePheromones() {
 
 //FoodRenew .
 func (ns *Nests) FoodRenew(renew bool) {
+	if len(ns.foodGroups) == 0 {
+		return
+	}
 	ns.foodRenew = renew
 	if ns.foodRenew {
 		for _, f := range ns.foods {
@@ -502,5 +505,15 @@ func (ns *Nests) FoodRenew(renew bool) {
 			fg.setPosition(f)
 			f.carried = false
 		}
+	}
+}
+
+//ClearFoodGroup .
+func (ns *Nests) ClearFoodGroup() {
+	ns.foodGroups = make([]*FoodGroup, 0, 0)
+	for _, f := range ns.foods {
+		f.carried = true
+		f.X = 0
+		f.Y = 0
 	}
 }

@@ -23,7 +23,7 @@ export class AppComponent {
   logLevel = 1
   timer : any
   info : any
-  foodRenew = "Stop food renew"
+  foodRenew = "Stop renew"
 
   constructor(private httpService : HttpService, private sessionService : SessionService) {
     sessionService.onStart.subscribe(
@@ -195,7 +195,7 @@ export class AppComponent {
        }
      )
    }
-   
+
    selectItem(evt : MouseEvent) {
      let x = evt.clientX - 7
      let y = evt.clientY- 60
@@ -226,7 +226,7 @@ export class AppComponent {
    }
 
    toggleFoodRenew() {
-     if (this.foodRenew == "Stop food renew") {
+     if (this.foodRenew == "Stop renew") {
        this.httpService.foodRenew(false).subscribe(
          data => {
            console.log("food renew stopped")
@@ -235,7 +235,7 @@ export class AppComponent {
            console.log(error)
          }
        )
-       this.foodRenew = "Start food renew"
+       this.foodRenew = "Start renew"
      } else {
        this.httpService.foodRenew(true).subscribe(
          data => {
@@ -245,7 +245,18 @@ export class AppComponent {
            console.log(error)
          }
        )
-       this.foodRenew = "Stop food renew"
+       this.foodRenew = "Stop renew"
      }
+   }
+
+   clearFoodGroup() {
+     this.httpService.clearFoodGroup().subscribe(
+       data => {
+         console.log("food groups cleared")
+       },
+       error => {
+         console.log(error)
+       }
+     )
    }
 }

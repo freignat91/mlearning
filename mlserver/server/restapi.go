@@ -102,3 +102,8 @@ func (s *Server) foodRenew(w http.ResponseWriter, r *http.Request) {
 	s.nests.FoodRenew(t.Ret)
 	json.NewEncoder(w).Encode("{}")
 }
+
+func (s *Server) clearFoodGroup(w http.ResponseWriter, r *http.Request) {
+	s.nests.ClearFoodGroup()
+	json.NewEncoder(w).Encode("{}")
+}

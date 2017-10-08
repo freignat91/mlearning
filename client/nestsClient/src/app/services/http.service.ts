@@ -130,6 +130,15 @@ export class HttpService {
       }
     )
   }
+
+  clearFoodGroup() {
+    return this.httpPost("/clearFoodGroup", { ret: true })
+      .map((res : Response) => {
+        return res.json()
+      }
+    )
+  }
+
 //--------------------------------------------------------------------------------------
 // http core functions
 //--------------------------------------------------------------------------------------

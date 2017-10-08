@@ -92,6 +92,7 @@ func (s *Server) handleAPIFunctions(r *mux.Router) {
 	r.HandleFunc("/api/v1/restart", s.restart).Methods("GET")
 	r.HandleFunc("/api/v1/addFoods", s.addFoods).Methods("POST")
 	r.HandleFunc("/api/v1/foodRenew", s.foodRenew).Methods("POST")
+	r.HandleFunc("/api/v1/clearFoodGroup", s.clearFoodGroup).Methods("POST")
 }
 
 //startGRPCServer .
