@@ -55,10 +55,6 @@ fmt:
 proto:
 	@protoc mlserver/server/server.proto --go_out=plugins=grpc:.
 
-check:
-	@test -z $(shell gofmt -l ${CHECKSRC} | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make fmt'"
-	@for d in $$(go list ./... | grep -v /vendor/); do golint $${d} | sed '/pb\.go/d'; done
-	@go tool vet ${CHECKSRC}
 
 run: 	build
 
