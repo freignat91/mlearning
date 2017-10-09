@@ -133,37 +133,33 @@ func (a *Ant) nextTime(ns *Nests) {
 	a.updateEntries(ns)
 	a.computeHappiness(ns)
 	a.printf(ns, "happiness=%.3f entries: %s\n", a.happiness, a.displayList(ns, a.entries, "%.2f"))
-	if ns.random {
-		a.direction = int(rand.Int31n(int32(outNb)))
-	} else {
-		if ns.log && ns.selected == a.id {
-			a.printf(ns, "lastDecision:%d entrie: %s hapiness=%.5f delta=%.5f\n", a.lastDecision, a.displayList(ns, a.entries, "%.3f"), a.happiness, a.happiness-a.lastHappiness)
-		}
-		if a.iner < 0 {
-			if a.happiness == a.lastHappiness && a.happiness >= 0 {
-				a.iner = -1
-				a.printf(ns, "decision: no need\n")
-			} else if a.happiness <= a.lastHappiness {
-				a.fadeLastDecision(ns)
-				if a.decide(ns) {
-					if ns.log && ns.selected == a.id {
-						a.printf(ns, "decision using network: %d outs: %s\n", a.direction, a.displayList(ns, a.outs, "%.3f"))
-					}
-					a.statDecision.incr()
-				} else {
-					a.direction = int(rand.Int31n(int32(outNb)))
-					a.lastDecision = -1
-					a.printf(ns, "decision random: %d\n", a.direction)
+	if ns.log && ns.selected == a.id {
+		a.printf(ns, "lastDecision:%d entrie: %s hapiness=%.5f delta=%.5f\n", a.lastDecision, a.displayList(ns, a.entries, "%.3f"), a.happiness, a.happiness-a.lastHappiness)
+	}
+	if a.iner < 0 {
+		if a.happiness == a.lastHappiness && a.happiness >= 0 {
+			a.iner = -1
+			a.printf(ns, "decision: no need\n")
+		} else if a.happiness <= a.lastHappiness {
+			a.fadeLastDecision(ns)
+			if a.decide(ns) {
+				if ns.log && ns.selected == a.id {
+					a.printf(ns, "decision using network: %d outs: %s\n", a.direction, a.displayList(ns, a.outs, "%.3f"))
 				}
+				a.statDecision.incr()
 			} else {
-				a.printf(ns, "decision: no need\n")
-				if a.train(ns) {
-					a.statTrain.incr()
-					if a.lastDecision != -1 {
-						a.printf(ns, "Decision %d reinforced\n", a.lastDecision)
-						a.statReinforce.incr()
-						a.lastDecision = -1
-					}
+				a.direction = int(rand.Int31n(int32(outNb)))
+				a.lastDecision = -1
+				a.printf(ns, "decision random: %d\n", a.direction)
+			}
+		} else {
+			a.printf(ns, "decision: no need\n")
+			if a.train(ns) {
+				a.statTrain.incr()
+				if a.lastDecision != -1 {
+					a.printf(ns, "Decision %d reinforced\n", a.lastDecision)
+					a.statReinforce.incr()
+					a.lastDecision = -1
 				}
 			}
 		}
@@ -173,9 +169,6 @@ func (a *Ant) nextTime(ns *Nests) {
 }
 
 func (a *Ant) decide(ns *Nests) bool {
-	if ns.random {
-		return false
-	}
 	if rand.Float64() < 0.1 {
 		//return false
 	}
@@ -269,6 +262,8 @@ func (a *Ant) updateEntries(ns *Nests) {
 		a.lastEntries[ii] = a.entries[ii]
 		a.entries[ii] = 0
 	}
+	a.lastEntryMode = a.entryMode
+	a.entryMode = 0
 	if a.carryFood != nil {
 		return
 	}
@@ -279,14 +274,11 @@ func (a *Ant) updateEntries(ns *Nests) {
 		return
 	}
 	a.updateEntriesForFriendAnts(ns)
-
 }
 
 func (a *Ant) updateEntriesForFoods(ns *Nests) bool {
 	dist2Max := a.vision * a.vision
 	a.contact = false
-	a.lastEntryMode = a.entryMode
-	//search food
 	dist2m := dist2Max
 	var foodMin *Food
 	for _, food := range ns.foods {
@@ -300,7 +292,7 @@ func (a *Ant) updateEntriesForFoods(ns *Nests) bool {
 	}
 	a.printf(ns, "closest food: %+v\n", foodMin)
 	if foodMin != nil {
-		a.entryMode = 2
+		//a.entryMode = 2
 		if dist2m < 4 {
 			a.carryFood = foodMin
 			foodMin.carried = true
@@ -338,7 +330,7 @@ func (a *Ant) updateEntriesForPheromones(ns *Nests) bool {
 		}
 	}
 	if pheMin != nil {
-		a.entryMode = 3
+		//a.entryMode = 3
 		if a.lastPheromone == pheMin.id {
 			a.lastPheromoneCount++
 		} else {
@@ -380,7 +372,7 @@ func (a *Ant) updateEntriesForFriendAnts(ns *Nests) bool {
 		}
 	}
 	if antMin != nil {
-		a.entryMode = 1
+		//a.entryMode = 1
 		ang := math.Atan2(antMin.x-a.x, antMin.y-a.y)
 		if ang < 0 {
 			ang = 2*math.Pi + ang
@@ -435,28 +427,7 @@ func (a *Ant) getDirIndex(nn int) int {
 func (a *Ant) moveOnOut(ns *Nests) {
 	//for now the nest return is hard coded
 	if a.carryFood != nil {
-		dd := math.Sqrt(float64((a.nest.x-a.x)*(a.nest.x-a.x) + (a.nest.y-a.y)*(a.nest.y-a.y)))
-		a.x += (a.nest.x - a.x) / dd * a.speed
-		a.y += (a.nest.y - a.y) / dd * a.speed
-		a.carryFood.X = a.x
-		a.carryFood.Y = a.y
-		a.pheromoneDelay--
-		if a.pheromoneDelay <= 0 {
-			a.printf(ns, "add pheromone\n")
-			a.pheromoneCount++
-			a.nest.addPheromone(a.x, a.y, a.pheromoneCount)
-			a.pheromoneDelay = a.nest.parameters.pheromoneAntDelay
-		}
-		if (a.nest.x-a.x)*(a.nest.x-a.x)+(a.nest.y-a.y)*(a.nest.y-a.y) < 4000 {
-			a.nest.statFood.incr()
-			if len(ns.foodGroups) > 0 {
-				if ns.foodRenew {
-					a.carryFood.renew()
-					a.carryFood.carried = false
-				}
-			}
-			a.carryFood = nil
-		}
+		a.moveOnCarryFood(ns)
 		return
 	}
 	angle := (math.Pi * 2 * float64(a.direction)) / float64(outNb) //+ math.Pi/2
@@ -490,8 +461,33 @@ func (a *Ant) moveOnOut(ns *Nests) {
 	}
 }
 
+func (a *Ant) moveOnCarryFood(ns *Nests) {
+	dd := math.Sqrt(float64((a.nest.x-a.x)*(a.nest.x-a.x) + (a.nest.y-a.y)*(a.nest.y-a.y)))
+	a.x += (a.nest.x - a.x) / dd * a.speed
+	a.y += (a.nest.y - a.y) / dd * a.speed
+	a.carryFood.X = a.x
+	a.carryFood.Y = a.y
+	a.pheromoneDelay--
+	if a.pheromoneDelay <= 0 {
+		a.printf(ns, "add pheromone\n")
+		a.pheromoneCount++
+		a.nest.addPheromone(a.x, a.y, a.pheromoneCount)
+		a.pheromoneDelay = a.nest.parameters.pheromoneAntDelay
+	}
+	if (a.nest.x-a.x)*(a.nest.x-a.x)+(a.nest.y-a.y)*(a.nest.y-a.y) < 4000 {
+		a.nest.statFood.incr()
+		if len(ns.foodGroups) > 0 {
+			if ns.foodRenew {
+				a.carryFood.renew()
+				a.carryFood.carried = false
+			}
+		}
+		a.carryFood = nil
+	}
+}
+
 func (a *Ant) train(ns *Nests) bool {
-	if ns.random || a.lastDecision < 0 || a.lastEntryMode != a.entryMode {
+	if a.lastDecision < 0 || a.lastEntryMode != a.entryMode {
 		return false
 	}
 	//fmt.Printf("%d  entries: %v\n", a.id, a.lastEntries)
@@ -516,7 +512,7 @@ func (a *Ant) train(ns *Nests) bool {
 }
 
 func (a *Ant) fadeLastDecision(ns *Nests) bool {
-	if ns.random || a.lastDecision == -1 || a.entryMode != a.lastEntryMode {
+	if a.lastDecision == -1 || a.entryMode != a.lastEntryMode {
 		return false
 	}
 	ins, ok := a.preparedEntries(a.lastEntries)

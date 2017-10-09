@@ -13,7 +13,7 @@ func newParameters() *Parameters {
 	return &Parameters{
 		pheromoneLevel:     1000,
 		pheromoneAntDelay:  20,
-		pheromoneFadeDelay: 5,
+		pheromoneFadeDelay: 150,
 		pheromoneGroup:     100,
 	}
 }

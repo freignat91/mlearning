@@ -74,7 +74,7 @@ Then, it's possible to add a mechanism to have a natural network structures sele
 
 this time, the network structures are not chosen anymore, the best ones will emerge naturally
 
-Currently the version 0.0.1 (spread) is achieved and works with a good level of network convergence and about 80% of good decisions, the version 0.0.2 (foods and pheromones) works well, but the level of converge is less good. Study is on going to improve that.
+Currently the version 0.0.1 (spread) is achieved and works with a good level of network convergence and about 80% of good decisions, the version 0.0.2 (foods and pheromones) works well, but it takes more time to reach the right percentage of good decision.
 
 
 # Ant networks structures

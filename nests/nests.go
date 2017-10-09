@@ -23,7 +23,6 @@ type Nests struct {
 	timeRef      int64
 	lastTimeRef  int64
 	speed        int64
-	random       bool
 	selectedNest int
 	selected     int
 	averageRate  float64
@@ -123,7 +122,6 @@ func NewNests(xmin float64, ymin float64, xmax float64, ymax float64, nbs []int,
 		nbs:           nbs,
 		nests:         make([]*Nest, len(nbs), len(nbs)),
 		stopped:       true,
-		random:        false, //to compate with random ant behavior
 		selected:      0,
 		selectedNest:  1,
 		period:        10000,
@@ -216,7 +214,6 @@ func (ns *Nests) NextTime() {
 	for _, nest := range ns.nests {
 		nest.nextTime(ns)
 		h += nest.happiness
-		ns.fadePheromones()
 		if nest.bestAnt.gRate > ns.bestNest.bestAnt.gRate {
 			ns.bestNest = nest
 		}
@@ -445,12 +442,6 @@ func (ns *Nests) AddFoodGroup(gx float64, gy float64) {
 	for ii := 0; ii < 20; ii++ {
 		food := newFood(fg)
 		ns.foods = append(ns.foods, food)
-	}
-}
-
-func (ns *Nests) fadePheromones() {
-	for _, n := range ns.nests {
-		n.fadePheromones()
 	}
 }
 

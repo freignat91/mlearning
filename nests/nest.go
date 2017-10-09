@@ -67,6 +67,7 @@ func (n *Nest) addData(list *[]*AntData) {
 func (n *Nest) nextTime(ns *Nests) {
 	h := 0.0
 	for _, ant := range n.ants {
+		n.fadePheromones()
 		ant.nextTime(ns)
 		h += ant.happiness
 		if ant.dirCount > n.bestAnt.dirCount {
