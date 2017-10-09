@@ -33,7 +33,7 @@ type Server struct {
 	nests   *nests.Nests
 }
 
-var nestsDef = []int{100}
+var nestsDef = []int{200}
 
 // Start gnode
 func (s *Server) Start(version string) error {

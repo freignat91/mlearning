@@ -182,8 +182,8 @@ export class AppComponent {
    }
 
    setFoodGroup(evt : MouseEvent) {
-     let x = evt.clientX - 7
-     let y = evt.clientY- 60
+     let x = evt.clientX - 15
+     let y = evt.clientY- 85
      let xr = x * this.sessionService.xmax / this.sessionService.width + this.sessionService.xmin
      let yr = y * this.sessionService.ymax / this.sessionService.height + this.sessionService.ymin
      this.httpService.addFoods(xr, yr).subscribe(
@@ -197,8 +197,8 @@ export class AppComponent {
    }
 
    selectItem(evt : MouseEvent) {
-     let x = evt.clientX - 7
-     let y = evt.clientY- 60
+     let x = evt.clientX - 15
+     let y = evt.clientY- 85
      let xr = x * this.sessionService.xmax / this.sessionService.width + this.sessionService.xmin
      let yr = y * this.sessionService.ymax / this.sessionService.height + this.sessionService.ymin
      let selectedAnt = null

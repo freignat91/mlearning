@@ -131,6 +131,7 @@ func (a *Ant) nextTime(ns *Nests) {
 	a.displayInfo(ns)
 	a.moveOnOut(ns)
 	a.updateEntries(ns)
+	a.computeHappiness(ns)
 	a.printf(ns, "happiness=%.3f entries: %s\n", a.happiness, a.displayList(ns, a.entries, "%.2f"))
 	if ns.random {
 		a.direction = int(rand.Int31n(int32(outNb)))
@@ -148,9 +149,7 @@ func (a *Ant) nextTime(ns *Nests) {
 					if ns.log && ns.selected == a.id {
 						a.printf(ns, "decision using network: %d outs: %s\n", a.direction, a.displayList(ns, a.outs, "%.3f"))
 					}
-					if a.lastEntryMode == a.entryMode {
-						a.statDecision.incr()
-					}
+					a.statDecision.incr()
 				} else {
 					a.direction = int(rand.Int31n(int32(outNb)))
 					a.lastDecision = -1
@@ -273,8 +272,18 @@ func (a *Ant) updateEntries(ns *Nests) {
 	if a.carryFood != nil {
 		return
 	}
+	if a.updateEntriesForFoods(ns) {
+		return
+	}
+	if a.updateEntriesForPheromones(ns) {
+		return
+	}
+	a.updateEntriesForFriendAnts(ns)
+
+}
+
+func (a *Ant) updateEntriesForFoods(ns *Nests) bool {
 	dist2Max := a.vision * a.vision
-	var antMin *Ant
 	a.contact = false
 	a.lastEntryMode = a.entryMode
 	//search food
@@ -296,7 +305,7 @@ func (a *Ant) updateEntries(ns *Nests) {
 			a.carryFood = foodMin
 			foodMin.carried = true
 			a.pheromoneCount = 0
-			return
+			return true
 		}
 		ang := math.Atan2(foodMin.X-a.x, foodMin.Y-a.y)
 		if ang < 0 {
@@ -307,13 +316,18 @@ func (a *Ant) updateEntries(ns *Nests) {
 			index = index - visionNb
 		}
 		a.entries[visionNb+index] = ((dist2Max - dist2m) / dist2Max)
-		a.computeHappiness(ns)
-		return
+		return true
 	}
+	return false
+}
+
+func (a *Ant) updateEntriesForPheromones(ns *Nests) bool {
 	//search pheromones
 	minLevel := 100000
+	dist2Max := a.vision * a.vision
+	dist2m := dist2Max
 	var pheMin *Pheromone
-	for _, phe := range ns.pheromones {
+	for _, phe := range a.nest.pheromones {
 		if phe.Level > 0 {
 			dist2 := a.distPhe2(phe)
 			if dist2 < dist2Max*1.5*1.5 && phe.id < minLevel {
@@ -342,24 +356,26 @@ func (a *Ant) updateEntries(ns *Nests) {
 			}
 			a.printf(ns, "better phe: %+v angle=%.4f index=%d level=%0.3f id=%d\n", pheMin, ang*180/math.Pi, index, pheMin.Level, pheMin.id)
 			a.entries[visionNb*2+index] = ((dist2Max - dist2m) / dist2Max)
-			a.computeHappiness(ns)
-			return
 		}
+		return true
 	}
-	//search ants
-	dist2m = a.vision * a.vision
-	for _, nest := range ns.nests {
-		for _, ant := range nest.ants {
-			if ant != a && ant.carryFood == nil {
-				dist2 := a.distAnt2(ant)
-				if dist2 < dist2Max/4 {
-					a.statContact.incr()
-					a.contact = true
-				}
-				if dist2 < dist2m {
-					antMin = ant
-					dist2m = dist2
-				}
+	return false
+}
+
+func (a *Ant) updateEntriesForFriendAnts(ns *Nests) bool {
+	dist2Max := a.vision * a.vision
+	dist2m := dist2Max
+	var antMin *Ant
+	for _, ant := range a.nest.ants {
+		if ant != a && ant.carryFood == nil {
+			dist2 := a.distAnt2(ant)
+			if dist2 < dist2Max/4 {
+				a.statContact.incr()
+				a.contact = true
+			}
+			if dist2 < dist2m {
+				antMin = ant
+				dist2m = dist2
 			}
 		}
 	}
@@ -375,8 +391,9 @@ func (a *Ant) updateEntries(ns *Nests) {
 		}
 		//a.printf(ns, "find %d angle=%0.2f degres=%0.2f index=%d\n", ant.id, ang, ang*180/math.Pi, index)
 		a.entries[index] = ((dist2Max - dist2m) / dist2Max)
+		return true
 	}
-	a.computeHappiness(ns)
+	return false
 }
 
 func (a *Ant) computeHappiness(ns *Nests) {
@@ -427,15 +444,14 @@ func (a *Ant) moveOnOut(ns *Nests) {
 		if a.pheromoneDelay <= 0 {
 			a.printf(ns, "add pheromone\n")
 			a.pheromoneCount++
-			ns.addPheromone(a.x, a.y, a.pheromoneCount)
-			a.pheromoneDelay = ns.pheromoneAntDelay
+			a.nest.addPheromone(a.x, a.y, a.pheromoneCount)
+			a.pheromoneDelay = a.nest.parameters.pheromoneAntDelay
 		}
 		if (a.nest.x-a.x)*(a.nest.x-a.x)+(a.nest.y-a.y)*(a.nest.y-a.y) < 4000 {
 			a.nest.statFood.incr()
 			if len(ns.foodGroups) > 0 {
-				fg := ns.foodGroups[rand.Int31n(int32(len(ns.foodGroups)))]
 				if ns.foodRenew {
-					fg.setPosition(a.carryFood)
+					a.carryFood.renew()
 					a.carryFood.carried = false
 				}
 			}
