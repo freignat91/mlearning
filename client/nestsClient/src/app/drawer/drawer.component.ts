@@ -26,8 +26,7 @@ export class DrawerComponent {
     )
     sessionService.onStart.subscribe(
       data => {
-        clearInterval(this.timer)
-        this.timer = setInterval(this.getData.bind(this), 100);
+        this.start()
       }
     )
     sessionService.onStop.subscribe(
@@ -39,25 +38,33 @@ export class DrawerComponent {
 
   ngOnInit() {
     const canvasElement = this.canvas.nativeElement;
-    canvasElement.width = this.sessionService.ww
-    canvasElement.height = this.sessionService.hh
-    this.ctx = canvasElement.getContext('2d');
-    this.ctx.scale(1,1)
-    this.ctx.translate(0.5, 0.5)
     this.httpService.getGlobalInfo().subscribe(
       data => {
         this.sessionService.xmin = data.xmin
         this.sessionService.ymin = data.ymin
         this.sessionService.xmax = data.xmax
         this.sessionService.ymax = data.ymax
+        this.sessionService.width = data.xmax-data.xmin
+        this.sessionService.height = data.ymax-data.ymin
         this.visionSize = data.ndir
         this.sessionService.selected = data.selectedAnt
-        console.log(data)
+        canvasElement.width = this.sessionService.width
+        canvasElement.height = this.sessionService.height
+        this.ctx = canvasElement.getContext('2d');
+        this.ctx.scale(1,1)
+        this.ctx.translate(0.5, 0.5)
+        this.start()
+        //console.log(data)
       },
       error => {
         console.log(error)
       }
     )
+  }
+
+  start() {
+    clearInterval(this.timer)
+    this.timer = setInterval(this.getData.bind(this), 100);
   }
 
   getData() {
@@ -79,49 +86,73 @@ export class DrawerComponent {
     //console.log(this.sessionService.data)
     const ctx = this.ctx
     ctx.lineWidth = 1;
-    ctx.clearRect(-1,-1,this.sessionService.width+1, this.sessionService.height+1);
+    ctx.clearRect(-1, -1, this.sessionService.width+1, this.sessionService.height+1);
 
     for (let obj of this.sessionService.data.foods) {
       //console.log(obj)
       if (obj.x!=0 && obj.y!=0) {
         ctx.beginPath();
-        ctx.fillStyle="blue";
+        ctx.fillStyle="green";
         ctx.fillRect(obj.x, obj.y, 3, 3)
       }
     }
-    for (let obj of this.sessionService.data.ants) {
-      //console.log(obj)
-      let angle = (Math.PI*2*obj.direction)/this.visionSize
+    let id = 0
+    for (let nest of this.sessionService.data.nests) {
+      let col = "blue"
+      if (id != 0) {
+        col="red"
+      }
+      id++
+      //console.log(col)
+      for (let obj of nest.ants) {
+        //console.log(obj)
+        if (obj.life>0) {
+          let angle = (Math.PI*2*obj.direction)/this.visionSize
+          ctx.beginPath();
+          if (obj.type == 0) {
+            ctx.lineWidth = 1
+          } else {
+            ctx.lineWidth = 2
+          }
+          ctx.strokeStyle = col
+          ctx.moveTo(this.getx(obj.x), this.gety(obj.y));
+          ctx.lineTo(this.getx(obj.x+Math.sin(angle)*3), this.gety(obj.y+Math.cos(angle)*3))
+          ctx.stroke();
 
-      ctx.beginPath();
-      if (obj.contact) {
-        ctx.strokeStyle="red";
-      } else {
-        ctx.strokeStyle="black";
+          if (this.sessionService.displayContact && obj.contact) {
+            ctx.beginPath();
+            ctx.stokeStyle="black"
+            ctx.lineWidth = 1
+            ctx.arc(this.getx(obj.x), this.gety(obj.y), this.getl(7), 0, 2*Math.PI, false);
+            ctx.stroke();
+          }
+          if (id == this.sessionService.nestSelected && obj.id == this.sessionService.selected) {
+            ctx.beginPath();
+            ctx.stokeStyle=col
+            ctx.lineWidth = 1
+            ctx.arc(this.getx(obj.x), this.gety(obj.y), this.getl(30), 0, 2*Math.PI, false);
+            ctx.stroke();
+          }
+          if (this.sessionService.displayFight && obj.fight) {
+            ctx.beginPath();
+            ctx.stokeStyle="orange"
+            ctx.lineWidth = 1
+            ctx.arc(this.getx(obj.x), this.gety(obj.y), this.getl(7), 0, 2*Math.PI, false);
+            ctx.stroke();
+          }
+        }
       }
-      if (obj.id == this.sessionService.selected) {
-        ctx.arc(this.getx(obj.x), this.gety(obj.y), this.getl(30), 0, 2*Math.PI, false);
-      }
-      ctx.moveTo(this.getx(obj.x), this.gety(obj.y));
-      ctx.lineTo(this.getx(obj.x+Math.sin(angle)*3), this.gety(obj.y+Math.cos(angle)*3))
-      ctx.stroke();
-      if (obj.contact) {
-        ctx.beginPath();
-        ctx.strokeStyle="red";
-        ctx.arc(this.getx(obj.x), this.gety(obj.y), this.getl(15), 0, 2*Math.PI, false);
-        ctx.stroke();
-      }
-    }
-    //console.log(this.sessionService.data.pheromones)
-    for (let obj of this.sessionService.data.pheromones) {
-      //console.log(obj)
-      if (obj.level>0) {
-        ctx.beginPath();
-        ctx.fillStyle="black";
-        //ctx.strokeStyle="black";
-        //ctx.moveTo(obj.x, obj.y)
-        //ctx.lineTo(obj.x, obj.y)
-        ctx.fillRect(obj.x, obj.y, 1, 1)
+      //console.log(this.sessionService.data.pheromones)
+      for (let obj of nest.pheromones) {
+        //console.log(obj)
+        if (obj.level>0) {
+          ctx.beginPath();
+          ctx.fillStyle="black";
+          //ctx.strokeStyle="black";
+          //ctx.moveTo(obj.x, obj.y)
+          //ctx.lineTo(obj.x, obj.y)
+          ctx.fillRect(obj.x, obj.y, 1, 1)
+        }
       }
     }
   }

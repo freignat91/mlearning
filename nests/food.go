@@ -23,6 +23,6 @@ func newFood(fg *FoodGroup) *Food {
 }
 
 func (f *Food) renew() {
-	f.X = f.foodGroup.x + rand.Float64()*20
-	f.Y = f.foodGroup.y + rand.Float64()*20
+	f.X = f.foodGroup.x + 10 - rand.Float64()*20
+	f.Y = f.foodGroup.y + 10 - rand.Float64()*20
 }

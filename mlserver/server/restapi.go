@@ -25,6 +25,12 @@ type FoodCoord struct {
 	Y float64 `json:"y"`
 }
 
+//AntSelected .
+type AntSelected struct {
+	Nest int `json:"nest"`
+	Ant  int `json:"ant"`
+}
+
 func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
 	data := s.nests.GetGraphicData()
 	json.NewEncoder(w).Encode(data)
@@ -67,8 +73,10 @@ func (s *Server) setSleep(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) setSelected(w http.ResponseWriter, r *http.Request) {
-	val, _ := strconv.Atoi(mux.Vars(r)["selected"])
-	s.nests.SetSelected(val)
+	decoder := json.NewDecoder(r.Body)
+	var a AntSelected
+	decoder.Decode(&a)
+	s.nests.SetSelected(a.Nest, a.Ant)
 	json.NewEncoder(w).Encode("{}")
 }
 
@@ -100,6 +108,14 @@ func (s *Server) foodRenew(w http.ResponseWriter, r *http.Request) {
 	var t RetBool
 	decoder.Decode(&t)
 	s.nests.FoodRenew(t.Ret)
+	json.NewEncoder(w).Encode("{}")
+}
+
+func (s *Server) setPanicMode(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var t RetBool
+	decoder.Decode(&t)
+	s.nests.SetPanicMode(t.Ret)
 	json.NewEncoder(w).Encode("{}")
 }
 

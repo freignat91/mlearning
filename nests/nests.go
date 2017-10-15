@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
+	"math/rand"
 	"time"
 
 	"github.com/freignat91/mlearning/network"
@@ -12,9 +14,8 @@ import (
 //Nests .
 type Nests struct {
 	waiter       int
-	nbs          []int
 	nests        []*Nest
-	totalNumber  int64
+	totalNumber  int
 	xmin         float64
 	xmax         float64
 	ymin         float64
@@ -27,15 +28,14 @@ type Nests struct {
 	selected     int
 	averageRate  float64
 	bestNest     *Nest
-	worseNest    *Nest
-	bestAnt      *Ant
-	worseAnt     *Ant
 	ready        bool
+	panicMode    bool
 	happiness    float64
 	dataSet      *network.MlDataSet
 	foods        []*Food
 	foodGroups   []*FoodGroup
 	foodRenew    bool
+	parameters   *Parameters
 	//
 	log           bool
 	period        int64
@@ -45,29 +45,16 @@ type Nests struct {
 	statFade      *Stats
 	statNetwork   *Stats
 	statContact   *Stats
-	statFood      *Stats
 }
 
 // GraphicData .
 type GraphicData struct {
-	Ants       []*AntData   `json:"ants"`
-	Foods      []*Food      `json:"foods"`
-	Pheromones []*Pheromone `json:"pheromones"`
-}
-
-//AntData .
-type AntData struct {
-	ID        int     `json:"id"`
-	X         float64 `json:"x"`
-	Y         float64 `json:"y"`
-	Direction int     `json:"direction"`
-	Contact   bool    `json:"contact"`
-	//Entries   []float64 `json:"entries"`
+	Foods []*Food     `json:"foods"`
+	Nests []*NestData `json:"nests"`
 }
 
 //GlobalInfo .
 type GlobalInfo struct {
-	Nests        []int   `json:"nests"`
 	Xmin         float64 `json:"xmin"`
 	Xmax         float64 `json:"xmax"`
 	Ymin         float64 `json:"ymin"`
@@ -80,20 +67,15 @@ type GlobalInfo struct {
 
 //Infos .
 type Infos struct {
-	Timer                int64   `json:"timer"`
-	Speed                int64   `json:"speed"`
-	Selected             *Info   `json:"selected"`
-	Global               *Info   `json:"global"`
-	BestID               int     `json:"bestId"`
-	BestNetworkStruct    string  `json:"bestNetworkStruct"`
-	BestNetworkGRate     float64 `json:"bestNetworkGRate"`
-	BestNetworkDirCount  int     `json:"bestNetworkDirCount"`
-	WorseID              int     `json:"worseId"`
-	WorseNetworkStruct   string  `json:"worseNetworkStruct"`
-	WorseNetworkGRate    float64 `json:"worseNetworkGRate"`
-	WorseNetworkDirCount int     `json:"worseNetworkDirCount"`
-	FromBeginningFoods   int64   `json:"fromBeginningFoods"`
-	PeriodFoods          int64   `json:"periodFoods"`
+	Timer              int64       `json:"timer"`
+	Speed              int64       `json:"speed"`
+	Nests              []*NestInfo `json:"nests"`
+	Selected           *Info       `json:"selected"`
+	Global             *Info       `json:"global"`
+	FromBeginningFoods int64       `json:"fromBeginningFoods"`
+	PeriodFoods        int64       `json:"periodFoods"`
+	FoodRenew          bool        `json:"foodRenew"`
+	PanicMode          bool        `json:"panicMode"`
 }
 
 //Info .
@@ -112,45 +94,32 @@ type Info struct {
 }
 
 //NewNests .
-func NewNests(xmin float64, ymin float64, xmax float64, ymax float64, nbs []int, foodNb int, foodGroupNb int) (*Nests, error) {
+func NewNests(xmin float64, ymin float64, xmax float64, ymax float64, foodNb int, foodGroupNb int) (*Nests, error) {
 	nests := &Nests{
 		xmin:          xmin,
 		ymin:          ymin,
 		xmax:          xmax,
 		ymax:          ymax,
 		waiter:        1,
-		nbs:           nbs,
-		nests:         make([]*Nest, len(nbs), len(nbs)),
+		parameters:    newParameters(),
+		nests:         make([]*Nest, 2, 2),
 		stopped:       true,
 		selected:      0,
 		selectedNest:  1,
 		period:        10000,
 		log:           false,
-		foods:         make([]*Food, 0, 0),
-		foodGroups:    make([]*FoodGroup, 0, 0),
 		foodRenew:     true,
+		panicMode:     true,
 		statTrain:     newStats(nil, nil),
 		statDecision:  newStats(nil, nil),
 		statReinforce: newStats(nil, nil),
 		statFade:      newStats(nil, nil),
 		statNetwork:   newStats(nil, nil),
 		statContact:   newStats(nil, nil),
-		statFood:      newStats(nil, nil),
 	}
-	for _, nb := range nbs {
-		nests.totalNumber += int64(nb)
+	if err := nests.init(); err != nil {
+		return nil, err
 	}
-	for ii, nb := range nbs {
-		nest, err := newNest(nests, ii+1, nb)
-		if err != nil {
-			return nil, err
-		}
-		nests.nests[ii] = nest
-	}
-	nests.bestNest = nests.nests[0]
-	nests.worseNest = nests.nests[0]
-	nests.bestAnt = nests.bestNest.bestAnt
-	nests.worseAnt = nests.worseNest.worseAnt
 	nests.ready = true
 	return nests, nil
 }
@@ -160,16 +129,45 @@ func (ns *Nests) IsReady() bool {
 	return ns.ready
 }
 
+func (ns *Nests) init() error {
+	rand.Seed(time.Now().UTC().UnixNano())
+	for ii, nest := range ns.nests {
+		if nest == nil {
+			nnest, err := newNest(ns, ii+1)
+			if err != nil {
+				return err
+			}
+			ns.nests[ii] = nnest
+		} else {
+			nest.init()
+		}
+	}
+	ns.bestNest = ns.nests[0]
+	ns.foods = make([]*Food, 0, 0)
+	ns.foodGroups = make([]*FoodGroup, 0, 0)
+	cc := 1.0
+	for _, nest := range ns.nests {
+		for ii := 0; ii < ns.parameters.initialFoodGroupNumberPerNest; ii++ {
+			angle := 20 + rand.Float64()*50
+			angle = angle * math.Pi / 180
+			x := nest.x + cc*math.Cos(angle)*300
+			y := nest.y + cc*math.Sin(angle)*300
+			ns.AddFoodGroup(x, y)
+		}
+		cc = cc * (-1)
+	}
+	return nil
+}
+
 //GetGraphicData .
 func (ns *Nests) GetGraphicData() *GraphicData {
-	ants := make([]*AntData, 0, 0)
-	for _, nest := range ns.nests {
-		nest.addData(&ants)
+	nests := make([]*NestData, len(ns.nests), len(ns.nests))
+	for ii, nest := range ns.nests {
+		nests[ii] = nest.getData()
 	}
 	return &GraphicData{
-		Ants:       ants,
-		Foods:      ns.foods,
-		Pheromones: ns.nests[0].pheromones,
+		Foods: ns.foods,
+		Nests: nests,
 	}
 }
 
@@ -182,6 +180,9 @@ func (ns *Nests) Start() {
 	go func() {
 		for {
 			ns.NextTime()
+			if ns.timeRef%10 == 0 {
+				ns.verifRestart()
+			}
 			if ns.waiter > 0 {
 				time.Sleep(time.Duration(ns.waiter) * time.Millisecond)
 			}
@@ -194,6 +195,9 @@ func (ns *Nests) Start() {
 
 //Stop .
 func (ns *Nests) Stop() {
+	if ns.stopped {
+		return
+	}
 	if ns.selected > 0 {
 		aa := ns.nests[ns.selectedNest-1].ants[ns.selected-1]
 		aa.commitPeriodStats(ns)
@@ -211,18 +215,16 @@ func (ns *Nests) NextTime() {
 	//ns.printf("\033[2J\033[0;0H\n")
 	ns.timeRef++
 	h := 0.0
+	totalNb := 0
 	for _, nest := range ns.nests {
 		nest.nextTime(ns)
+		totalNb += nest.workerNb + nest.soldierNb
 		h += nest.happiness
-		if nest.bestAnt.gRate > ns.bestNest.bestAnt.gRate {
+		if nest.bestWorker.gRate > ns.bestNest.bestWorker.gRate {
 			ns.bestNest = nest
 		}
-		if nest.worseAnt.gRate < ns.worseNest.worseAnt.gRate {
-			ns.worseNest = nest
-		}
 	}
-	ns.bestAnt = ns.bestNest.bestAnt
-	ns.worseAnt = ns.worseNest.worseAnt
+	ns.totalNumber = totalNb
 	ns.averageRate = float64(ns.statReinforce.cumul) * 100.0 / float64(ns.statDecision.cumul)
 	ns.happiness = h / float64(len(ns.nests))
 }
@@ -232,10 +234,16 @@ func (ns *Nests) printf(format string, args ...interface{}) {
 }
 
 func (ns *Nests) getSelected() *Ant {
-	if ns.selected <= 0 {
+	if ns.selectedNest <= 0 || ns.selectedNest > len(ns.nests) {
+		ns.selected = 0
 		return nil
 	}
-	return ns.nests[ns.selectedNest-1].ants[ns.selected-1]
+	selectedNest := ns.nests[ns.selectedNest-1]
+	if ns.selected <= 0 || ns.selected > len(selectedNest.ants) {
+		ns.selected = 0
+		return nil
+	}
+	return selectedNest.ants[ns.selected-1]
 }
 
 func (ns *Nests) commitPeriodStats() {
@@ -245,13 +253,13 @@ func (ns *Nests) commitPeriodStats() {
 	ns.speed = ns.timeRef - ns.lastTimeRef
 	ns.lastTimeRef = ns.timeRef
 	for _, nest := range ns.nests {
+		nest.setBestAnts()
 		nest.statTrain.push()
 		nest.statDecision.push()
 		nest.statReinforce.push()
 		nest.statFade.push()
 		nest.statNetwork.push()
 		nest.statContact.push()
-		nest.statFood.push()
 	}
 	ns.statTrain.push()
 	ns.statDecision.push()
@@ -259,26 +267,30 @@ func (ns *Nests) commitPeriodStats() {
 	ns.statFade.push()
 	ns.statNetwork.push()
 	ns.statContact.push()
-	ns.statFood.push()
 }
 
 //SetSelected .
-func (ns *Nests) SetSelected(selected int) {
-	ns.printf("selected: %d\n", selected)
+func (ns *Nests) SetSelected(selectedNest int, selected int) {
 	ns.selected = selected
-	ant := ns.nests[ns.selectedNest-1].ants[ns.selected-1]
-	ns.dataSet = &network.MlDataSet{
-		Name:   "ant",
-		Layers: ant.network.Getdef(),
-		Data:   make([]network.MlDataSample, 0, 0),
-	}
-	if ns.stopped {
-		ant.commitPeriodStats(ns)
+	ns.selectedNest = selectedNest
+	ant := ns.getSelected()
+	if ant != nil {
+		fmt.Printf("selected: %d-%d type=%d life:%d\n", selectedNest, selected, ant.AntType, ant.Life)
+		ns.dataSet = &network.MlDataSet{
+			Name:   "ant",
+			Layers: ant.network.Getdef(),
+			Data:   make([]network.MlDataSample, 0, 0),
+		}
+		if ns.stopped {
+			ant.commitPeriodStats(ns)
+		}
+	} else {
+		ns.dataSet = nil
 	}
 }
 
 func (ns *Nests) addSample(ins []float64, outs []float64) {
-	if len(ns.dataSet.Data) >= 10000 {
+	if ns.dataSet == nil || len(ns.dataSet.Data) >= 10000 {
 		return
 	}
 	mouts := make([]float64, outNb, outNb)
@@ -322,7 +334,6 @@ func (ns *Nests) SetSleep(value int) {
 //GetGlobalInfo .
 func (ns *Nests) GetGlobalInfo() *GlobalInfo {
 	return &GlobalInfo{
-		Nests:        ns.nbs,
 		Ndir:         outNb,
 		Waiter:       ns.waiter,
 		Xmin:         ns.xmin,
@@ -336,14 +347,16 @@ func (ns *Nests) GetGlobalInfo() *GlobalInfo {
 
 //GetInfo .
 func (ns *Nests) GetInfo() *Infos {
-
 	ns.commitPeriodStats()
+	if ns.totalNumber == 0 {
+		ns.totalNumber = 1
+	}
 	global := &Info{
 		Happiness:                   ns.happiness,
-		Train:                       ns.statTrain.cumul / ns.totalNumber,
-		Reinforce:                   ns.statReinforce.cumul / ns.totalNumber,
-		Fade:                        ns.statFade.cumul / ns.totalNumber,
-		Decision:                    ns.statDecision.cumul / ns.totalNumber,
+		Train:                       ns.statTrain.cumul / int64(ns.totalNumber),
+		Reinforce:                   ns.statReinforce.cumul / int64(ns.totalNumber),
+		Fade:                        ns.statFade.cumul / int64(ns.totalNumber),
+		Decision:                    ns.statDecision.cumul / int64(ns.totalNumber),
 		FromBeginningTrain:          ns.statTrain.scumul,
 		Contact:                     ns.statContact.cumul,
 		PeriodNetworkUpdated:        ns.statNetwork.cumul,
@@ -358,7 +371,6 @@ func (ns *Nests) GetInfo() *Infos {
 	var selected = &Info{}
 	aa := ns.getSelected()
 	if aa != nil {
-		aa.commitPeriodStats(ns)
 		selected = &Info{
 			Happiness:                   aa.happiness,
 			Train:                       aa.statTrain.cumul,
@@ -391,48 +403,42 @@ func (ns *Nests) GetInfo() *Infos {
 			selected.FromBeginningGRate = float64(aa.statReinforce.scumul*100) / float64(aa.statDecision.scumul)
 		}
 	}
-	ns.bestAnt.commitPeriodStats(ns)
-	ns.worseAnt.commitPeriodStats(ns)
 
+	nests := make([]*NestInfo, len(ns.nests), len(ns.nests))
+	for ii, nest := range ns.nests {
+		nests[ii] = nest.getInfo()
+	}
 	return &Infos{
-		Timer:                ns.timeRef,
-		Speed:                ns.speed,
-		Global:               global,
-		Selected:             selected,
-		BestID:               ns.bestAnt.id,
-		BestNetworkStruct:    fmt.Sprintf("%v", ns.bestAnt.network.Getdef()),
-		BestNetworkGRate:     ns.bestAnt.gRate,
-		BestNetworkDirCount:  ns.bestAnt.dirCount,
-		WorseID:              ns.worseAnt.id,
-		WorseNetworkStruct:   fmt.Sprintf("%v", ns.worseAnt.network.Getdef()),
-		WorseNetworkGRate:    ns.worseAnt.gRate,
-		WorseNetworkDirCount: ns.worseAnt.dirCount,
-		FromBeginningFoods:   ns.statFood.scumul,
-		PeriodFoods:          ns.statFood.cumul,
+		Timer:     ns.timeRef,
+		Speed:     ns.speed,
+		Nests:     nests,
+		Global:    global,
+		Selected:  selected,
+		FoodRenew: ns.foodRenew,
+		PanicMode: ns.panicMode,
 	}
 }
 
 //GetNetwork .
 func (ns *Nests) GetNetwork(nestID int, antID int) (*network.MLNetwork, error) {
 	if nestID == 0 && antID == 0 {
-		if ns.selected <= 0 {
-			return nil, fmt.Errorf("no selected ant")
+		ant := ns.getSelected()
+		if ant == nil {
+			return nil, fmt.Errorf("No selected ant")
 		}
-		return ns.nests[ns.selectedNest-1].ants[ns.selected-1].network, nil
+		return ant.network, nil
 	}
+	if ns.selectedNest <= 0 || ns.selectedNest > len(ns.nests) {
+		return nil, fmt.Errorf("Invalid nest id")
+	}
+	selectedNest := ns.nests[ns.selectedNest-1]
 	if nestID == -1 {
-		return ns.bestAnt.network, nil
+		return selectedNest.bestWorker.network, nil
 	}
-	if nestID == -2 {
-		return ns.worseAnt.network, nil
+	if antID <= 0 || antID > len(selectedNest.ants) {
+		return nil, fmt.Errorf("Invalid ant id")
 	}
-	if nestID-1 < 0 || nestID-1 >= len(ns.nests) {
-		return nil, fmt.Errorf("bad nest id: %d should be [1-%d]", nestID, len(ns.nests))
-	}
-	if antID-1 < 0 || antID-1 >= len(ns.nests[nestID-1].ants) {
-		return nil, fmt.Errorf("bad ant id: %d should be [1-%d]", antID, len(ns.nests[nestID-1].ants))
-	}
-	return ns.nests[nestID-1].ants[antID-1].network, nil
+	return selectedNest.ants[ns.selected-1].network, nil
 }
 
 // AddFoodGroup .
@@ -442,6 +448,22 @@ func (ns *Nests) AddFoodGroup(gx float64, gy float64) {
 	for ii := 0; ii < 20; ii++ {
 		food := newFood(fg)
 		ns.foods = append(ns.foods, food)
+	}
+}
+
+// RemoveFoodGroup .
+func (ns *Nests) RemoveFoodGroup(gx float64, gy float64) {
+	dist2m := 20.0 * 20.0
+	var nfg *FoodGroup
+	for _, fg := range ns.foodGroups {
+		dist2 := (fg.x-gx)*(fg.x-gx) + (fg.y-gy)*(fg.y-gy)
+		if dist2 < dist2m {
+			dist2m = dist2
+			nfg = fg
+		}
+	}
+	if nfg != nil {
+		//
 	}
 }
 
@@ -462,9 +484,25 @@ func (ns *Nests) FoodRenew(renew bool) {
 //ClearFoodGroup .
 func (ns *Nests) ClearFoodGroup() {
 	ns.foodGroups = make([]*FoodGroup, 0, 0)
-	for _, f := range ns.foods {
-		f.carried = true
-		f.X = 0
-		f.Y = 0
+	ns.foods = make([]*Food, 0, 0)
+}
+
+//SetPanicMode .
+func (ns *Nests) SetPanicMode(mode bool) {
+	ns.panicMode = mode
+}
+
+func (ns *Nests) verifRestart() {
+	if len(ns.nests[0].ants) == 0 {
+		ns.nests[1].success++
+		fmt.Printf("Nest red win worker=%d soldier=%d\n", ns.nests[1].workerNb, ns.nests[1].soldierNb)
+		ns.init()
+		return
+	}
+	if len(ns.nests[1].ants) == 0 {
+		ns.nests[0].success++
+		fmt.Printf("Nest blue win worker=%d soldier=%d\n", ns.nests[1].workerNb, ns.nests[1].soldierNb)
+		ns.init()
+		return
 	}
 }

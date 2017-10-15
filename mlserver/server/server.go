@@ -33,8 +33,6 @@ type Server struct {
 	nests   *nests.Nests
 }
 
-var nestsDef = []int{100}
-
 // Start gnode
 func (s *Server) Start(version string) error {
 	config.init(version)
@@ -55,7 +53,10 @@ func (s *Server) init() {
 }
 
 func (s *Server) initNests() {
-	nests, _ := nests.NewNests(0, 0, 500, 500, nestsDef, 50, 5)
+	if s.nests != nil {
+		s.nests.Stop()
+	}
+	nests, _ := nests.NewNests(0, 0, 800, 500, 50, 5)
 	s.nests = nests
 }
 
@@ -86,13 +87,14 @@ func (s *Server) handleAPIFunctions(r *mux.Router) {
 	r.HandleFunc("/api/v1/nextTime", s.nextTime).Methods("GET")
 	r.HandleFunc("/api/v1/exportAntSample", s.exportAntSample).Methods("GET")
 	r.HandleFunc("/api/v1/setSleep/{value}", s.setSleep).Methods("GET")
-	r.HandleFunc("/api/v1/setSelected/{selected}", s.setSelected).Methods("GET")
+	r.HandleFunc("/api/v1/setSelected", s.setSelected).Methods("POST")
 	r.HandleFunc("/api/v1/globalInfo", s.getGlobalInfo).Methods("GET")
 	r.HandleFunc("/api/v1/info", s.getInfo).Methods("GET")
 	r.HandleFunc("/api/v1/restart", s.restart).Methods("GET")
 	r.HandleFunc("/api/v1/addFoods", s.addFoods).Methods("POST")
 	r.HandleFunc("/api/v1/foodRenew", s.foodRenew).Methods("POST")
 	r.HandleFunc("/api/v1/clearFoodGroup", s.clearFoodGroup).Methods("POST")
+	r.HandleFunc("/api/v1/panic", s.setPanicMode).Methods("POST")
 }
 
 //startGRPCServer .

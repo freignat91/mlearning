@@ -16,16 +16,15 @@ export class AppComponent {
   title = "title"
   messageError = ""
   isStarted = false
-  messageStartStop="start"
+  messageStartStop="Start"
   graphPanelHeight = 500
-  graphPanelWidth = 500
+  graphPanelWidth = 800
   speed = 1
   logLevel = 1
   timer : any
   info : any
-  foodRenew = "Stop renew"
 
-  constructor(private httpService : HttpService, private sessionService : SessionService) {
+  constructor(private httpService : HttpService, public sessionService : SessionService) {
     sessionService.onStart.subscribe(
       data => {
         this.start()
@@ -46,9 +45,12 @@ export class AppComponent {
     )
   }
 
+  ngOnInit() {
+    this.start()
+  }
 
   startStop() {
-    if (this.messageStartStop == "start") {
+    if (this.messageStartStop == "Start") {
       this.sessionService.start()
     } else {
       this.sessionService.stop()
@@ -57,7 +59,7 @@ export class AppComponent {
 
 
   start() {
-      this.messageStartStop = "stop"
+      this.messageStartStop = "Stop"
       console.log("starting")
       this.httpService.start().subscribe(
         data => {
@@ -74,7 +76,7 @@ export class AppComponent {
     }
 
    stop() {
-     this.messageStartStop = "start"
+     this.messageStartStop = "Start"
      console.log("stoping")
      this.httpService.stop().subscribe(
        data => {
@@ -119,6 +121,8 @@ export class AppComponent {
        data => {
          //console.log(data)
          this.info = data
+         this.sessionService.foodRenew = data.foodRenew
+         this.sessionService.panicMode = data.panicMode
        },
        error => {
          console.log(error)
@@ -156,10 +160,11 @@ export class AppComponent {
      )
    }
 
-   select(id) {
-     this.httpService.setSelected(id).subscribe(
+   select(nestId, antId) {
+     this.httpService.setSelected(nestId, antId).subscribe(
        data => {
-         this.sessionService.selected = id
+         this.sessionService.nestSelected = nestId
+         this.sessionService.selected = antId
          this.nextTime()
          //console.log(data)
        },
@@ -182,13 +187,14 @@ export class AppComponent {
    }
 
    setFoodGroup(evt : MouseEvent) {
-     let x = evt.clientX - 15
-     let y = evt.clientY- 85
+     let x = evt.clientX - 5
+     let y = evt.clientY- 75
      let xr = x * this.sessionService.xmax / this.sessionService.width + this.sessionService.xmin
      let yr = y * this.sessionService.ymax / this.sessionService.height + this.sessionService.ymin
      this.httpService.addFoods(xr, yr).subscribe(
        data => {
          console.log("foods added")
+         this.nextTime()
        },
        error => {
          console.log(error)
@@ -197,23 +203,29 @@ export class AppComponent {
    }
 
    selectItem(evt : MouseEvent) {
-     let x = evt.clientX - 15
-     let y = evt.clientY- 85
+     let x = evt.clientX - 5
+     let y = evt.clientY- 75
      let xr = x * this.sessionService.xmax / this.sessionService.width + this.sessionService.xmin
      let yr = y * this.sessionService.ymax / this.sessionService.height + this.sessionService.ymin
      let selectedAnt = null
+     let selectedNest = 0
      let distm = 100000000
-     for (let ant of this.sessionService.data.ants) {
-       let dist = (ant.x - xr)*(ant.x - xr)+(ant.y - yr)*(ant.y - yr)
-       if (dist<distm) {
-         distm = dist
-         selectedAnt = ant
+     let id = 0
+     for (let nest of this.sessionService.data.nests) {
+       id++
+       for (let ant of nest.ants) {
+         let dist = (ant.x - xr)*(ant.x - xr)+(ant.y - yr)*(ant.y - yr)
+         if (dist<distm) {
+           distm = dist
+           selectedAnt = ant
+           selectedNest = id
+         }
        }
      }
      //console.log(x +","+y+","+xr+","+yr)
      //console.log(selectedAnt)
      if (selectedAnt != null) {
-       this.select(selectedAnt.id)
+       this.select(selectedNest, selectedAnt.id)
      }
    }
 
@@ -225,28 +237,26 @@ export class AppComponent {
      this.sessionService.mode = "select"
    }
 
-   toggleFoodRenew() {
-     if (this.foodRenew == "Stop renew") {
-       this.httpService.foodRenew(false).subscribe(
-         data => {
-           console.log("food renew stopped")
-         },
-         error => {
-           console.log(error)
-         }
-       )
-       this.foodRenew = "Start renew"
-     } else {
-       this.httpService.foodRenew(true).subscribe(
-         data => {
-           console.log("food renew started")
-         },
-         error => {
-           console.log(error)
-         }
-       )
-       this.foodRenew = "Stop renew"
-     }
+   foodRenew(evt) {
+     this.httpService.foodRenew(evt.target.checked).subscribe(
+       data => {
+         console.log("food renew set to: "+evt.target.cheked)
+       },
+       error => {
+         console.log(error)
+       }
+     )
+   }
+
+   panicMode(evt) {
+     this.httpService.panicMode(!evt.target.checked).subscribe(
+       data => {
+         console.log("panic mode set to: "+evt.target.cheked)
+       },
+       error => {
+         console.log(error)
+       }
+     )
    }
 
    clearFoodGroup() {
@@ -258,5 +268,19 @@ export class AppComponent {
          console.log(error)
        }
      )
+   }
+
+   fightCircles(evt) {
+     this.sessionService.displayFight = false
+     if (evt.target.checked) {
+       this.sessionService.displayFight = true
+     }
+   }
+
+   contactCircles(evt) {
+     this.sessionService.displayContact = false
+     if (evt.target.checked) {
+       this.sessionService.displayContact = true
+     }
    }
 }

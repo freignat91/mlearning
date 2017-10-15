@@ -83,8 +83,8 @@ export class HttpService {
     )
   }
 
-  setSelected(value) {
-    return this.httpGet("/setSelected/"+value)
+  setSelected(nestId, antId) {
+    return this.httpPost("/setSelected", {Nest: nestId, Ant: antId})
       .map((res : Response) => {
         return res.json()
       }
@@ -125,6 +125,14 @@ export class HttpService {
 
   foodRenew(renew : boolean) {
     return this.httpPost("/foodRenew", { ret: renew })
+      .map((res : Response) => {
+        return res.json()
+      }
+    )
+  }
+
+  panicMode(mode : boolean) {
+    return this.httpPost("/panic", { ret: mode })
       .map((res : Response) => {
         return res.json()
       }

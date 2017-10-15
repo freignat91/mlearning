@@ -4,7 +4,7 @@ SHELL := /bin/sh
 BASEDIR := $(shell echo $${PWD})
 
 # build variables (provided to binaries by linker LDFLAGS below)
-VERSION := 0.0.1
+VERSION := 0.0.3
 
 LDFLAGS=-ldflags "-X=main.Version=$(VERSION)"
 
