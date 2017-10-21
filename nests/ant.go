@@ -505,7 +505,7 @@ func (a *Ant) updateEntriesForHostileAnts(ns *Nests) bool {
 			}
 		}
 		if a.AntType == 0 {
-			if rand.Float64() < 0.01 && (a.X-a.nest.x)*(a.X-a.nest.x)+(a.Y-a.nest.y)*(a.Y-a.nest.y) > 4000 {
+			if rand.Float64() < 0.1 && (a.X-a.nest.x)*(a.X-a.nest.x)+(a.Y-a.nest.y)*(a.Y-a.nest.y) > 4000 {
 				a.printf(ns, "current ant panic mode\n")
 				a.panic = true
 				a.Fight = false
