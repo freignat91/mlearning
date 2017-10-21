@@ -11,7 +11,6 @@ import (
 	"github.com/freignat91/mlearning/nests"
 	"github.com/freignat91/mlearning/network"
 	"github.com/gorilla/mux"
-	"github.com/phyber/negroni-gzip/gzip"
 	"github.com/urfave/negroni"
 
 	"golang.org/x/net/context"
@@ -63,7 +62,7 @@ func (s *Server) initNests(nb int) {
 func (s *Server) start() {
 	r := mux.NewRouter()
 	n := negroni.Classic()
-	n.Use(gzip.Gzip(gzip.DefaultCompression)) //bug with Firefox
+	//n.Use(gzip.Gzip(gzip.DefaultCompression))//bug with Firefox
 	n.UseHandler(r)
 
 	abspath, err := filepath.Abs("./public")
