@@ -190,8 +190,19 @@ export class AppComponent {
        return
      } else if (this.sessionService.mode == "setfoodGroup") {
        this.setFoodGroup(evt)
+     } else if (this.sessionService.mode == "pan") {
+       this.pan(evt)
      }
    }
+
+  pan(evt : MouseEvent) {
+    let x = evt.clientX - 20
+    let y = evt.clientY + 60
+    this.sessionService.fpanx = this.sessionService.getInvx(x)
+    this.sessionService.fpany = this.sessionService.getInvx(y)
+    this.sessionService.setZoom(1)
+    this.sessionService.redraw()
+  }
 
    setFoodGroup(evt : MouseEvent) {
      let x = evt.clientX - 20
@@ -235,13 +246,18 @@ export class AppComponent {
      this.select(selectedNestId, selectedAntId)
    }
 
-   addFoods(evt : MouseEvent) {
+   addFoods() {
      this.sessionService.mode = "setfoodGroup"
    }
 
-   selectAnt(evt : MouseEvent) {
+   selectAnt() {
      this.sessionService.mode = "select"
    }
+
+   zoomPan() {
+     this.sessionService.mode = "pan"
+   }
+
 
    foodRenew(evt) {
      this.httpService.foodRenew(evt.target.checked).subscribe(

@@ -676,7 +676,7 @@ func (a *Ant) moveToNest(ns *Nests) {
 			a.pheromoneDelay = a.nest.parameters.pheromoneAntDelay
 		}
 	}
-	if (a.nest.x-a.X)*(a.nest.x-a.X)+(a.nest.y-a.Y)*(a.nest.y-a.Y) < 900 {
+	if (a.nest.x-a.X)*(a.nest.x-a.X)+(a.nest.y-a.Y)*(a.nest.y-a.Y) < 1600 {
 		direc := a.Direction + outNb/2
 		if direc >= outNb {
 			direc = direc - outNb

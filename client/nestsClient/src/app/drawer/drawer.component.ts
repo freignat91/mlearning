@@ -115,8 +115,8 @@ export class DrawerComponent {
       ctx.beginPath();
       ctx.strokeStyle=col
       ctx.lineWidth = 1
-      ctx.moveTo(this.sessionService.getx(this.sessionService.nestsInfo[id].x)+this.sessionService.getl(30), this.sessionService.gety(this.sessionService.nestsInfo[id].y))
-      ctx.arc(this.sessionService.getx(this.sessionService.nestsInfo[id].x), this.sessionService.gety(this.sessionService.nestsInfo[id].y), this.sessionService.getl(30), 0, 2*Math.PI, false);
+      ctx.moveTo(this.sessionService.getx(this.sessionService.nestsInfo[id].x)+this.sessionService.getl(40), this.sessionService.gety(this.sessionService.nestsInfo[id].y))
+      ctx.arc(this.sessionService.getx(this.sessionService.nestsInfo[id].x), this.sessionService.gety(this.sessionService.nestsInfo[id].y), this.sessionService.getl(40), 0, 2*Math.PI, false);
       ctx.stroke();
       id++
       //console.log(col)
