@@ -21,13 +21,13 @@ func (a *Ant) distAnt2(ant *Ant) float64 {
 }
 
 func (a *Ant) printf(ns *Nests, format string, args ...interface{}) {
-	if ns.log && a.ID == ns.selected {
+	if ns.log && a == ns.selected {
 		fmt.Printf(format, args...)
 	}
 }
 
 func (a *Ant) displayList(ns *Nests, list []float64, format string) string {
-	if a.ID != ns.selected {
+	if a != ns.selected {
 		return ""
 	}
 	ret := "[ "

@@ -12,7 +12,8 @@
                 <span class="caret" style="cursor:pointer;color:white"></span>
               </button>
               <div class="dropdown-menu">
-                <li><a (click)="restart()">Restart</a></li>
+                <li><a (click)="restart(2)">Restart with 2 nests</a></li>
+                <li><a (click)="restart(4)">Restart with 4 nests</a></li>
                 <li role="separator" class="divider"></li>
                 <li><a (click)="exportSample()">Export samples</a></li>
               </div>
@@ -63,6 +64,19 @@
               AddFoods
             </button>
 
+            Zoom:
+            <button type="button"
+              class="btn btn-primary"
+              (click)="sessionService.setZoom(0.9)">
+              +
+            </button>
+
+            <button type="button"
+              class="btn btn-primary"
+              (click)="sessionService.setZoom(1.1)">
+              -
+            </button>
+
           </div>
         </div>
       </div>
@@ -71,8 +85,8 @@
 </div>
 <div class="row">
   <div class="panel panel-default" style="border-style:none;margin-left:50px;margin-bottom:0px">
-    <input (click)="contactCircles($event)" type="checkbox" name="figthBox">Contact circles
-    <input (click)="fightCircles($event)" type="checkbox" name="figthBox">Fight circles
+    <input (click)="displayGraph($event)" type="checkbox" name="display" checked>Display
+    <input style="margin-left:20px" (click)="fightCircles($event)" type="checkbox" name="figthBox">Fight circles
     <input style="margin-left:20px" (click)="foodRenew($event)" [checked]="sessionService.foodRenew" type="checkbox" name="foodRenew">Food renew
     <input style="margin-left:20px" (click)="panicMode($event)" [checked]="!sessionService.panicMode" type="checkbox" name="panicMode">Don't panic
   </div>
@@ -81,45 +95,40 @@
 <span class="help-block" style="color:red;margin-left:20px">{{ messageError }}</span>
 
 
-<div class="row">
-  <div style="border-style:none;margin:5px;float:left">
+<div class="row" style="margin-left:5px">
+  <div style="border-style:none;float:left">
     <div
       style="width:100%;height:100%;padding:0px;margin-left:5px">
       <app-drawer #container (mouseup)='clickEvent($event)' style="width:100%; height:100%;"></app-drawer>
     </div>
   </div>
     <div style="float:left;margin:5px" *ngIf="info">
-      <table>
+      <table (click)="displayTableToggle()">
         <tbody>
-          <tr><td>Timer</td><td>{{ info.timer }}</td><td>{{ info.speed}} t/s</td></tr>
-
-          <tr><td><div class="title">From the beginning</div></td><td><div class="title">Global</div></td><td><div class="title">Selected</div></td></tr>
-          <tr><td>Happiness</td><td>{{ info.global.happiness.toFixed(2) }}</td><td>{{ info.selected.happiness.toFixed(2) }}</td></tr>
-          <tr><td>Updated network</td><td>{{ info.global.fromBeginningNetworkUpdated }}</td><td>{{ info.selected.fromBeginningNetworkUpdated }}</td></tr>
-          <tr><td>Train number</td><td>{{ info.global.fromBeginningTrain }}</td><td>{{ info.selected.fromBeginningTrain }}</td></tr>
-          <tr><td>Decision rate</td><td>{{ info.global.fromBeginningGRate.toFixed(2) }}%</td><td>{{ info.selected.fromBeginningGRate.toFixed(2) }}%</td></tr>
-
+          <tr><td>Timer / speed</td><td>{{ info.timer }}</td><td>{{ info.speed}} t/s</td></tr>
+          <tr><td><div class="title">Nests</div></td><td><div class="title">{{ sessionService.nestColors[tindex]}}</div></td><td><div class="title">{{ sessionService.nestColors[tindex+1]}}</div></td></tr>
+          <tr><td>Success</td><td>{{ info.nests[tindex].success }}</td><td>{{ info.nests[tindex+1].success }}</td></tr>
+          <tr><td>Ressources</td><td>{{ info.nests[tindex].ressource }}</td><td>{{ info.nests[tindex+1].ressource }}</td></tr>
+          <tr><td>Workers</td><td>{{ info.nests[tindex].worker }}</td><td>{{ info.nests[tindex+1].worker }}</td></tr>
+          <tr><td>Soldiers</td><td>{{ info.nests[tindex].soldier }}</td><td>{{ info.nests[tindex+1].soldier }}</td></tr>
           <tr><td><div class="title">Average per ant on period</div></td><td></td><td></td></tr>
-          <tr><td>Contact</td><td>{{ info.global.contact }}</td><td>{{ info.selected.contact }}</td></tr>
-          <tr><td>Train number</td><td>{{ info.global.train }}</td><td>{{ info.selected.train }}</td></tr>
-          <tr><td>Decision</td><td>{{ info.global.decision }}</td><td>{{ info.selected.decision }}</td></tr>
-          <tr><td>Positive decision reinforcement</td><td>{{ info.global.reinforce }}</td><td>{{ info.selected.reinforce }}</td></tr>
-          <tr><td>Negative decision fading</td><td>{{ info.global.fade }}</td><td>{{ info.selected.fade }}</td></tr>
-          <tr><td>Updated network</td><td>{{ info.global.periodNetworkUpdated }}</td><td>{{ info.selected.periodNetworkUpdated }}</td></tr>
-          <tr><td>Decision rate</td><td>{{ info.global.periodGRate.toFixed(2) }}%</td><td>{{ info.selected.periodGRate.toFixed(2) }}%</td></tr>
-
-          <tr class="sep"><td></td><td></td><td></td></tr>
-          <tr><td><div class="title">Nests</div></td><td><div class="title">blue</div></td><td><div class="title">red</div></td></tr>
-          <tr><td>Success</td><td>{{ info.nests[0].success }}</td><td>{{ info.nests[1].success }}</td></tr>
-          <tr><td>Ressources</td><td>{{ info.nests[0].ressource }}</td><td>{{ info.nests[1].ressource }}</td></tr>
-          <tr><td>Life</td><td>{{ info.nests[0].life }}</td><td>{{ info.nests[1].life }}</td></tr>
-          <tr><td>Workers</td><td>{{ info.nests[0].worker }}</td><td>{{ info.nests[1].worker }}</td></tr>
-          <tr><td>Soldiers</td><td>{{ info.nests[0].soldier }}</td><td>{{ info.nests[1].soldier }}</td></tr>
-          <tr><td><div class="title">Nest best neuron network</div></td><td></td><td></td></tr>
-          <tr><td>Structure</td><td>{{ info.nests[0].bestNetworkStruct }}</td><td>{{ info.nests[1].bestNetworkStruct }}</td></tr>
-          <tr><td>Distinct decisions</td><td>{{ info.nests[0].bestNetworkDirCount }}</td><td>{{ info.nests[1].bestNetworkDirCount }}</td></tr>
-          <tr><td>Decision rate</td><td>{{ info.nests[0].bestNetworkGRate.toFixed(2) }}%</td><td>{{ info.nests[1].bestNetworkGRate.toFixed(2) }}%</td></tr>
-
+          <tr><td>Decision</td><td>{{ info.nests[tindex].decision.toFixed(1) }}</td><td>{{ info.nests[tindex+1].decision.toFixed(1) }}</td></tr>
+          <tr><td>Positive decision reinforcement</td><td>{{ info.nests[tindex].reinforce.toFixed(1) }}</td><td>{{ info.nests[tindex+1].reinforce.toFixed(1) }}</td></tr>
+          <tr><td>Negative decision fading</td><td>{{ info.nests[tindex].fade.toFixed(1) }}</td><td>{{ info.nests[tindex+1].fade.toFixed(1) }}</td></tr>
+          <tr><td>Distincts decisions</td><td>{{ info.nests[tindex].dirCount.toFixed(1) }}</td><td>{{ info.nests[tindex+1].dirCount.toFixed(1) }}</td></tr>
+          <tr><td>Good decision rate</td><td>{{ info.nests[tindex].gRate.toFixed(2) }}%</td><td>{{ info.nests[tindex+1].gRate.toFixed(2) }}%</td></tr>
+          <tr><td><div class="title">Best worker neuron network</div></td><td></td><td></td></tr>
+          <tr><td>Structure</td><td>{{ info.nests[tindex].bestWorkerNetworkStruct }}</td><td>{{ info.nests[tindex+1].bestWorkerNetworkStruct }}</td></tr>
+          <tr><td>Distinct decisions</td><td>{{ info.nests[tindex].bestWorkerNetworkDirCount }}</td><td>{{ info.nests[tindex+1].bestWorkerNetworkDirCount }}</td></tr>
+          <tr><td>Good decision rate</td><td>{{ info.nests[tindex].bestWorkerNetworkGRate.toFixed(2) }}%</td><td>{{ info.nests[tindex+1].bestWorkerNetworkGRate.toFixed(2) }}%</td></tr>
+          <tr><td><div class="title">Best soldier neuron network</div></td><td></td><td></td></tr>
+          <tr><td>Structure</td><td>{{ info.nests[tindex].bestSoldierNetworkStruct }}</td><td>{{ info.nests[tindex+1].bestSoldierNetworkStruct }}</td></tr>
+          <tr><td>Distinct decisions</td><td>{{ info.nests[tindex].bestSoldierNetworkDirCount }}</td><td>{{ info.nests[tindex+1].bestSoldierNetworkDirCount }}</td></tr>
+          <tr><td>Good decision rate</td><td>{{ info.nests[tindex].bestSoldierNetworkGRate.toFixed(2) }}%</td><td>{{ info.nests[tindex+1].bestSoldierNetworkGRate.toFixed(2) }}%</td></tr>
+          <tr><td><div class="title">selected ant</div></td><td></td><td></td></tr>
+          <tr><td>Id / nestId</td><td>{{info.selectedInfo.id}}</td><td>{{info.selectedInfo.nestId}}</td></tr>
+          <tr><td>distinct decisions / rate</td><td>{{info.selectedInfo.dirCount}}</td><td>{{info.selectedInfo.gRate.toFixed(2)}}%</td></tr>
+          <tr><td>mode</td><td colspan="2">{{info.selectedInfo.mode}}</td></tr>
         </tbody>
       </table>
   </div>

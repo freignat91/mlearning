@@ -18,14 +18,15 @@ version 0.0.2: Foods appears in the space, ants are able to get them and bring b
 
 version 0.0.3: with two nests and two ant types (worker and soldier), ants will be able to fight agains the other nest ants.
 
-version 0.0.4 (not done): in version 0.0.2 worker panic mode and worker return to nest are hard-coded, in 0.0.4, panic mode should be network train result.
+version 0.0.4 (not done): in version 0.0.2 worker panic mode and worker return to nest are hard-coded, in 0.0.4, panic mode should be network train result and have return to nests as network train result, including avoid obstacles on the path
 
-version 0.0.5 (not done): have return to nests as network train result, including avoid obstacles on the path
+version 0.0.5 (not done): in all the other versions, ants take decision regarding there immediate environment. This version will dig on integrating decision history in the network scope in order to have better middle-term decisions
+
 
 
 # Version 0.0.3 rules of the game
 
-In version 0.0.3 the nests try to survive maximizing their resources.
+In version 0.0.3 the nests try to survive maximising their resources.
 
 The ant behaviours are the following:
 
@@ -54,9 +55,11 @@ For that let's consider the consequence of an ant decision, using the following 
   - if the happiness is the same than the one of previous loop, do nothing and keep the direction as it is.
   - if this happiness is greater than the one of previous loop, then consider that the decision is good and train the network using the previous entry and the output corresponding the chosen direction.
 
-This loop appeared not to be enough in order to make the network converging to stable results. It needed to not only reinforce the good decisions, but to fade the bad ones.
+This loop appeared not to be enough, the network has difficulties to converge
 
-Then it's possible to add the following step:
+In version 0.0.2, the following rule has been added:
+
+In order to make the network converging to stable results. It's possible to not only reinforce the good decisions, but to fade the bad ones.
 
 - if the computed happiness is lower than the previous one, train the network with the previous entry and a fading output computed using the chosen direction (see chapter `fade decision`)
 
@@ -77,7 +80,32 @@ On regular basis (every 1000 or 10000 ticks), for each ant:
 
 This way, we train networks on decisions it doesn't show too much on its regular way. If the "forced" decisions appear to be good, they will be naturally reinforced and then their statistical distribution will be better (>100) and they become regular decisions.
 
-The networks are now able to converge and use about all their decision capability.
+In version 0.0.3, this solution appeared not so good, because there are more decision kinds to take with different kinds of contexts.
+
+These rules have been removed, a bad decision is not fade anymore and random decisions next to the regular not taken anymore.
+
+Back to the basis, to test if the system should take decision with the network or randomly, the following test is used: `rand() > 1 - gRate`
+ where:
+- rand() generate an random number between 0 and 1
+- gRate is the good decision rate (good decision number / total decision number)
+
+if the test is true, the system use the network to take decision otherwise the decision is taken randomly.
+
+So at the beginning the network has 0% of good decision and `rand() > 1 - gRate` gives `rand() > 1` which is always false, so the decision are taken randomly.
+The random decisions which appear good (which raise the ant happiness) are used to train the network and it becomes more and mode good.
+when it reach for instance 50% of good decisions, the test gives `rand() > 0.5` witch is true half of the time, and half of the time the decisions are taken by the network.
+when the gRate is closed to 100%, the test gives `rand() > ~0`, which is most of the time true and decision are mostly taken using the network
+This way more the network is good more it is used.
+
+Using these rules the networks are in capacity to converge if they are able to, but it appears that they stays at about 50% of good answers, which is just not better that random decisions.
+
+Analysing why, it appears that the network are reinforced with not optimal decisions, meaning decisions which are good (they raise the ant happiness), but another ones could have been better (raise more the ant happiness).
+Most of the not optimal decisions become bad decision when the context change, only optimal decision stay good no matter the context.
+So they need a way to reinforce mostly optimal decisions.
+
+In order to try to detect the optimal decisions, the system compute permanently the average value of the difference between two happiness values when this difference is positive.
+The system reinforce decision (train the network) if the current difference is upper to the average one, so there is better chance that the decision is one the better.
+This way the networks are train less often, but with a better quality data and converge fast to reach about 100% of good answers
 
 Now, there is another issue: We don't know which network structure(s) should be used. 3 layers, 4 layers? how many neurones by layer?
 
@@ -86,13 +114,13 @@ The first tested networks were empirically set at the beginning, showing that a 
 Then, it's possible to add a mechanism to have a natural network structures selection using this way of working:
 
 - at the beginning each ant has a random network, random number of internal layers (for 1 to 2) having a random number of neurones (for now: for 5 to 50 for the first one and 5 to 30 for the second one if exist) and random synapses coef values. The input and output layers have all the same number of neurones in all ants, but it could be changed in future versions.
-- on regular basis (1000 or 10000 ticks), for each ant:
+- on regular basis 1000, for each ant:
   - compute the maximum distinct decisions the network is able to take (let's call it `maxDecision`)
   - compute good decision rate: [number of decision on the period which raise the happiness: `[reinforced decision number on the period] / [total number of decision on the period]`, let's call it `good decision rate`
-- on regular basis (100000 ticks) during the simulation:
+- on regular basis (every 3 seconds) during the simulation:
   - find the best network of the nest for each ant kind (worker, soldier) (the one having first the best `maxDecision` and if equal the one having the best `good decision rate`)
-  - for each ants:
-    - if its network `maxDecision` is lower for a factor 2 than the best network of its kind and if equal or lower factor 1, if its `good decision rate` is lower for 10% than the best network of its kind then: duplicate the best network of its kind with all it trained synapse coefficients and set it to a considered ant
+- when an ant is created:
+    - there is 80% chance than it get a copy of best network of the nest with all its synapses already trained, and 20% to have a new random one. (parameter: `./nests/parameters.go` file name: `chanceToGetTheBestNetworkCopy`)
 
 this time, the network structures are not chosen anymore, the best ones will emerge naturally
 
@@ -105,9 +133,9 @@ This way the best trained network is not lost if its associated ant died. It ben
 
 On version 0.0.1, the input and output layer have 8 neurons each.
 On version 0.0.2, the input layer has 24 neurons and the output 8.
-On verison 0.0.4, the input layer has 32 neurons and the output 8.
+On version 0.0.3, the input layer has 32 neurons and the output 8.
 
-In version 0.0.3, the networks have only one internal hidden layers, having for 5 to 50 neurons. Two internal layers networks never success to over take one internal layer network. Could be updated in future version if needed, but it speed up the first network selections stage (100000 to 200000 first ticks)
+In version 0.0.3, the networks have only one internal hidden layers, having for 5 to 50 neurons. Two internal layers networks never success to over take one internal layer network. Could be updated in future version if needed, but it speeds up the first network selections stage (100000 to 200000 first ticks)
 
 ## input layer
 
@@ -169,6 +197,12 @@ When input layer is set and propagated through the network, then the output laye
 
 The way to take a direction decision using the network output is the following:
 
+version 0.0.3:
+
+Simply take the upper value of the output layer.
+
+version 0.0.2:
+
 on regular basis, each ant compute a statistical distribution of the decisions taken using its network outputs.
 This distribution is an array of int with for each possible decision (direction) the number of time the decisions has been taken during the period.
 Let's call it `decisionSum` array. It's updated every 1000 ticks to always reflect the up to date situation.
@@ -184,6 +218,8 @@ This counter-balance the flattering effect given by the bad decision fading. see
 
 
 # Fade decision
+
+not used anymore in version 0.0.3
 
 If we only reinforce the good decisions, the ones which raise the ant happiness, it takes too much time to the networks to converge and some of them can't converge because their random initial synapse values lead to only bad decisions.
 
@@ -295,6 +331,7 @@ To see the UI, open a Chrome (tested only on Chrome for now) and enter url: loca
 Then you can:
   - start/stop the simulation and use "next step" button to move tick after tick and see result
   - speed up/down the server (down to be able to see the moves, up to let train the network faster)
+  - zoom in/out the simulation graphic
   - Button "clear group", remove all existing food groups
   - two click modes are possibles:
     - click on "Select ant" button and then on the graphic space to select an ant
@@ -303,6 +340,7 @@ Then you can:
     - "Restart": (re)start a new simulation from the beginning
     - "Export sample": export max 10000 trained sample of the selected ant to file (the file is created on server side ./test/testant.json)
   - checkboxes:
+    - display: hide or display the graphical simulation to spear cpu time when long computation
     - contact circles: if checked, show circles when ants of the same nest are in contact (less than vision length / 4) and when there in scoot mode (not car
       rying food, not panic, not fighting, not trace up pheromone)
     - fight circles:if checked, show circles when ants are fighting
@@ -320,28 +358,28 @@ The UI shows the graphical simulation on the left and information on the right
 where:
 - from the beginning, total and for the selected ant:
   - Timer is the tick number (one tick compute one move for all the ants) and the number of ticks per second
-  - update networks: the updated (copied) networks
-  - train number: the number of time the networks have been trained
   - decision rate: the good decisions % (good decisions / total decisions)
 - for the current period (2 sec), total and for the selected ant:
-  - contact: the number of ant contacts (less than the max vision length / 2)
   - train number: the number of time the networks have been trained
   - decision: the number of decisions taken
   - positive decision reinforcement: the number of trains after a good decision
   - negative decision fading: the number of fading train after a bas decision
-  - update networks: the updated (copied) networks
-  - train number: the number of time the networks have been trained
   - decision rate: the good answers % (good decisions / total decisions)
-- for networks assessment, worse or best:
-  - ant id of network (clicking on it, it selects it)
-  - structure: structure of the networks (number of neurons per layer)
-  - distinct decisions: distinct number of decision the network can taken
-  - decision rate: the good decisions % of the network (good decisions / total decisions)
 - for nests back and red:
-  - ressources: ability to create new ant (4 point for a soldier, 1 for a worker)
+  - success: the number of time the nest success to destroy the other nest
+  - resources: ability to create new ant (4 point for a soldier, 1 for a worker)
   - life: sum of all the life of the nest ants
   - worker: number of workers
   - soldier: number of soldier
+  - best worker network: the best worker network in the period for each nest
+    - structure: structure of the networks (number of neurons per layer)
+    - distinct decisions: distinct number of decision the network can taken
+    - decision rate: the good decisions % of the network (good decisions / total decisions)
+  - best soldier network: the best worker network in the period for each nest
+    - ant id of network (clicking on it, it selects it)
+    - structure: structure of the networks (number of neurons per layer)
+    - distinct decisions: distinct number of decision the network can taken
+    - decision rate: the good decisions % of the network (good decisions / total decisions)
 
 
 ## command line

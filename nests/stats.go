@@ -6,19 +6,11 @@ type Stats struct {
 	cumul  int64
 	scumul int64
 	nest   *Stats
-	nests  *Stats
 }
 
-func newStats(ns *Stats, n *Stats) *Stats {
+func newStats(n *Stats) *Stats {
 	return &Stats{
-		nests: ns,
-		nest:  n,
-	}
-}
-
-func newNestStats(ns *Stats) *Stats {
-	return &Stats{
-		nests: ns,
+		nest: n,
 	}
 }
 
@@ -27,9 +19,6 @@ func (s *Stats) incr() {
 	s.scumul++
 	if s.nest != nil {
 		s.nest.incr()
-	}
-	if s.nests != nil {
-		s.nests.incr()
 	}
 }
 

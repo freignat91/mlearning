@@ -162,30 +162,3 @@ func (n MLNetwork) analyseDataSet(lines *[]string, dataSet *MlDataSet) {
 		*lines = append(*lines, fmt.Sprintf("in %d: %s\n", ii, sret))
 	}
 }
-
-//Test .
-func (n *MLNetwork) Test() []string {
-	var matchRate float64
-	tot := 0.0
-	maxes := make(map[int]int)
-	lines := make([]string, 1, 1)
-	lines[0] = fmt.Sprintf("Test network: %v\n", n.Getdef())
-	for ii := range n.in.neurons {
-		ins := make([]float64, len(n.in.neurons), len(n.in.neurons))
-		ins[ii] = 1
-		outs := n.Propagate(ins, true)
-		matchRate += n.matchRate(outs)
-		sin, _, _ := n.sList(ins, "%.0f", false, -1)
-		braq := ii + len(outs)/2
-		if braq >= len(outs) {
-			braq = braq - len(outs)
-		}
-		sout, val, max := n.sList(outs, "%.2f", true, braq)
-		maxes[max] = 1
-		tot += val
-		lines = append(lines, fmt.Sprintf("%s => %s\n", sin, sout))
-	}
-	matchRate = matchRate / float64(len(n.in.neurons))
-	lines = append(lines, fmt.Sprintf("Match rate:%.5f tot:%.5f distinct=%d\n", matchRate, tot, len(maxes)))
-	return lines
-}

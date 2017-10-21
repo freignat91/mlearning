@@ -11,7 +11,6 @@ import (
 	"github.com/freignat91/mlearning/nests"
 	"github.com/freignat91/mlearning/network"
 	"github.com/gorilla/mux"
-	"github.com/phyber/negroni-gzip/gzip"
 	"github.com/urfave/negroni"
 
 	"golang.org/x/net/context"
@@ -46,24 +45,24 @@ func (s *Server) Start(version string) error {
 
 func (s *Server) init() {
 	s.network = &network.MLNetwork{}
-	s.initNests()
+	s.initNests(2)
 	//fmt.Printf("init data: %v\n", s.nests.GetData())
 	s.startGRPCServer()
 	s.start()
 }
 
-func (s *Server) initNests() {
+func (s *Server) initNests(nb int) {
 	if s.nests != nil {
 		s.nests.Stop()
 	}
-	nests, _ := nests.NewNests(0, 0, 800, 500, 50, 5)
+	nests, _ := nests.NewNests(-400, -250, 400, 250, 50, 5, nb)
 	s.nests = nests
 }
 
 func (s *Server) start() {
 	r := mux.NewRouter()
 	n := negroni.Classic()
-	n.Use(gzip.Gzip(gzip.DefaultCompression))
+	//n.Use(gzip.Gzip(gzip.DefaultCompression))//bug with Firefox
 	n.UseHandler(r)
 
 	abspath, err := filepath.Abs("./public")
@@ -90,7 +89,7 @@ func (s *Server) handleAPIFunctions(r *mux.Router) {
 	r.HandleFunc("/api/v1/setSelected", s.setSelected).Methods("POST")
 	r.HandleFunc("/api/v1/globalInfo", s.getGlobalInfo).Methods("GET")
 	r.HandleFunc("/api/v1/info", s.getInfo).Methods("GET")
-	r.HandleFunc("/api/v1/restart", s.restart).Methods("GET")
+	r.HandleFunc("/api/v1/restart", s.restart).Methods("POST")
 	r.HandleFunc("/api/v1/addFoods", s.addFoods).Methods("POST")
 	r.HandleFunc("/api/v1/foodRenew", s.foodRenew).Methods("POST")
 	r.HandleFunc("/api/v1/clearFoodGroup", s.clearFoodGroup).Methods("POST")

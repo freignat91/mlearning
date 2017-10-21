@@ -107,8 +107,8 @@ export class HttpService {
     )
   }
 
-  restart() {
-    return this.httpGet("/restart")
+  restart(nb) {
+    return this.httpPost("/restart", { Ret: nb})
       .map((res : Response) => {
         return res.json()
       }

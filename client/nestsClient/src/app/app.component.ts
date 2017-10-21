@@ -2,7 +2,6 @@
 import { ViewChild, Component, Directive, ElementRef, HostListener, Input, Renderer  } from '@angular/core';
 import { HttpService } from './services/http.service'
 import { SessionService } from './services/session.service'
-import { Info } from './models/info.model'
 
 const httpRetryDelay = 200
 const httpRetryNumber = 3
@@ -17,12 +16,11 @@ export class AppComponent {
   messageError = ""
   isStarted = false
   messageStartStop="Start"
-  graphPanelHeight = 500
-  graphPanelWidth = 800
   speed = 1
   logLevel = 1
   timer : any
   info : any
+  tindex = 0
 
   constructor(private httpService : HttpService, public sessionService : SessionService) {
     sessionService.onStart.subscribe(
@@ -59,21 +57,21 @@ export class AppComponent {
 
 
   start() {
-      this.messageStartStop = "Stop"
-      console.log("starting")
-      this.httpService.start().subscribe(
-        data => {
-          clearInterval(this.timer)
-          this.getInfo()
-          this.timer = setInterval(this.getInfo.bind(this), 2000);
-          console.log("started")
-          this.sessionService.started = true
-        },
-        error => {
-          console.log(error)
-        }
-      )
-    }
+    this.messageStartStop = "Stop"
+    console.log("starting")
+    this.httpService.start().subscribe(
+      data => {
+        clearInterval(this.timer)
+        this.getInfo()
+        this.timer = setInterval(this.getInfo.bind(this), 3000);
+        console.log("started")
+        this.sessionService.started = true
+      },
+      error => {
+        console.log(error)
+      }
+    )
+  }
 
    stop() {
      this.messageStartStop = "Start"
@@ -103,15 +101,20 @@ export class AppComponent {
      )
    }
 
-   restart() {
+   restart(nb) {
      this.sessionService.stop()
-     this.httpService.restart().subscribe(
+     this.httpService.restart(nb).subscribe(
        data => {
-        this.sessionService.start()
-         console.log("restarted")
-       },
-       error => {
-         console.log(error)
+        this.httpService.getGlobalInfo().subscribe(
+          info => {
+            this.sessionService.nestsInfo = info.nests
+            this.sessionService.start()
+             console.log("restarted")
+           },
+           error => {
+             console.log(error)
+           }
+         )
        }
      )
    }
@@ -121,6 +124,9 @@ export class AppComponent {
        data => {
          //console.log(data)
          this.info = data
+         if (!this.info.selectedInfo) {
+           this.info.selectedInfo = { gRate:0 }
+         }
          this.sessionService.foodRenew = data.foodRenew
          this.sessionService.panicMode = data.panicMode
        },
@@ -165,6 +171,7 @@ export class AppComponent {
        data => {
          this.sessionService.nestSelected = nestId
          this.sessionService.selected = antId
+         //this.sessionService.redraw()
          this.nextTime()
          //console.log(data)
        },
@@ -187,10 +194,10 @@ export class AppComponent {
    }
 
    setFoodGroup(evt : MouseEvent) {
-     let x = evt.clientX - 5
-     let y = evt.clientY- 75
-     let xr = x * this.sessionService.xmax / this.sessionService.width + this.sessionService.xmin
-     let yr = y * this.sessionService.ymax / this.sessionService.height + this.sessionService.ymin
+     let x = evt.clientX - 20
+     let y = evt.clientY + 60
+     let xr = this.sessionService.getInvx(x)
+     let yr = this.sessionService.getInvx(y)
      this.httpService.addFoods(xr, yr).subscribe(
        data => {
          console.log("foods added")
@@ -203,30 +210,29 @@ export class AppComponent {
    }
 
    selectItem(evt : MouseEvent) {
-     let x = evt.clientX - 5
-     let y = evt.clientY- 75
-     let xr = x * this.sessionService.xmax / this.sessionService.width + this.sessionService.xmin
-     let yr = y * this.sessionService.ymax / this.sessionService.height + this.sessionService.ymin
-     let selectedAnt = null
+     let x = evt.clientX - 20
+     let y = evt.clientY + 60
+     let xr = this.sessionService.getInvx(x)
+     let yr = this.sessionService.getInvx(y)
+     let selectedAnt = undefined
      let selectedNest = 0
-     let distm = 100000000
-     let id = 0
+     let distm = 30*30
+     let selectedNestId = 0
+     let selectedAntId = 0
+     let id=0
      for (let nest of this.sessionService.data.nests) {
        id++
        for (let ant of nest.ants) {
          let dist = (ant.x - xr)*(ant.x - xr)+(ant.y - yr)*(ant.y - yr)
          if (dist<distm) {
            distm = dist
-           selectedAnt = ant
-           selectedNest = id
+           selectedAntId = ant.id
+           selectedNestId = id
          }
        }
      }
-     //console.log(x +","+y+","+xr+","+yr)
-     //console.log(selectedAnt)
-     if (selectedAnt != null) {
-       this.select(selectedNest, selectedAnt.id)
-     }
+     //console.log(selectedNestId+"-"+selectedAntId)
+     this.select(selectedNestId, selectedAntId)
    }
 
    addFoods(evt : MouseEvent) {
@@ -277,10 +283,22 @@ export class AppComponent {
      }
    }
 
-   contactCircles(evt) {
-     this.sessionService.displayContact = false
-     if (evt.target.checked) {
-       this.sessionService.displayContact = true
+   displayGraph(evt) {
+     this.sessionService.display = evt.target.checked
+     if (!this.sessionService.display) {
+       this.sessionService.clear()
+     }
+   }
+
+   displayTableToggle() {
+     if (this.sessionService.nestsInfo.length <= 2) {
+       this.tindex = 0
+       return
+     }
+     if (this.tindex == 0) {
+       this.tindex = 2
+     } else {
+       this.tindex = 0
      }
    }
 }

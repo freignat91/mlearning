@@ -13,27 +13,25 @@ type Nest struct {
 	y                    float64
 	antIDCounter         int
 	ants                 []*Ant
-	statTrain            *Stats
 	statDecision         *Stats
+	statGoodDecision     *Stats
 	statReinforce        *Stats
 	statFade             *Stats
-	statNetwork          *Stats
-	statContact          *Stats
 	bestWorker           *Ant
 	bestSoldier          *Ant
-	happiness            float64
-	happinessTmp         float64
 	parameters           *Parameters
 	pheromones           []*Pheromone
 	pheromoneFadeCounter int
 	ressource            int
 	workerNb             int
 	soldierNb            int
-	life                 int
-	lifeTmp              int
-	bestDirCount         int
-	bestGRate            float64
+	bestWorkerDirCount   int
+	bestWorkerGRate      float64
+	bestSoldierDirCount  int
+	bestSoldierGRate     float64
 	success              int
+	averageDirCount      float64
+	averageGRate         float64
 }
 
 //NestData .
@@ -44,29 +42,40 @@ type NestData struct {
 
 //NestInfo .
 type NestInfo struct {
-	NestID              int     `json:"id"`
-	Worker              int     `json:"worker"`
-	Soldier             int     `json:"soldier"`
-	Ressource           int     `json:"ressource"`
-	Life                int     `json:"life"`
-	BestNetworkStruct   string  `json:"bestNetworkStruct"`
-	BestNetworkDirCount int     `json:"bestNetworkDirCount"`
-	BestNetworkGRate    float64 `json:"bestNetworkGRate"`
-	Success             int     `json:"success"`
+	NestID                     int     `json:"id"`
+	Worker                     int     `json:"worker"`
+	Soldier                    int     `json:"soldier"`
+	Ressource                  int     `json:"ressource"`
+	BestWorkerNetworkStruct    string  `json:"bestWorkerNetworkStruct"`
+	BestWorkerNetworkDirCount  int     `json:"bestWorkerNetworkDirCount"`
+	BestWorkerNetworkGRate     float64 `json:"bestWorkerNetworkGRate"`
+	BestSoldierNetworkStruct   string  `json:"bestSoldierNetworkStruct"`
+	BestSoldierNetworkDirCount int     `json:"bestSoldierNetworkDirCount"`
+	BestSoldierNetworkGRate    float64 `json:"bestSoldierNetworkGRate"`
+	Success                    int     `json:"success"`
+	Decision                   float64 `json:"decision"`
+	Reinforce                  float64 `json:"reinforce"`
+	Fade                       float64 `json:"fade"`
+	DirCount                   float64 `json:"dirCount"`
+	GRate                      float64 `json:"gRate"`
+}
+
+//NestGlobalInfo .
+type NestGlobalInfo struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 func newNest(ns *Nests, id int) (*Nest, error) {
 	param := newParameters()
 	nest := &Nest{
-		id:            id,
-		ns:            ns,
-		parameters:    param,
-		statTrain:     newStats(nil, nil),
-		statDecision:  newStats(nil, nil),
-		statReinforce: newStats(nil, nil),
-		statFade:      newStats(nil, nil),
-		statNetwork:   newStats(nil, nil),
-		statContact:   newStats(nil, nil),
+		id:               id,
+		ns:               ns,
+		parameters:       param,
+		statDecision:     newStats(nil),
+		statGoodDecision: newStats(nil),
+		statReinforce:    newStats(nil),
+		statFade:         newStats(nil),
 	}
 	if id == 1 {
 		nest.x = ns.xmin + 25
@@ -101,57 +110,103 @@ func (n *Nest) init() {
 	for ii := 0; ii < n.parameters.workerInitNb; ii++ {
 		n.addWorker(n.ns, n.x+30-rand.Float64()*60, n.y+30-rand.Float64()*60, rand.Intn(outNb))
 	}
-	n.ressource = n.parameters.soldierInitNb
+	n.ressource = n.parameters.soldierInitNb * n.parameters.soldierRessourceCost
 	for ii := 0; ii < n.parameters.soldierInitNb; ii++ {
 		n.addSoldier(n.ns, n.x+30-rand.Float64()*60, n.y+30-rand.Float64()*60, 0, 0, rand.Intn(outNb))
 	}
-	n.bestWorker = newAntWorker(n.ns, n, 0, 0, 0)
-	n.bestSoldier = newAntSoldier(n.ns, n, 0, 0, 0, 0, 0)
+	if n.bestWorker == nil {
+		n.bestWorker = newAntWorker(n.ns, n, 0, 0, 0)
+	}
+	if n.bestSoldier == nil {
+		n.bestSoldier = newAntSoldier(n.ns, n, 0, 0, 0, 0, 0)
+	}
 	n.ressource = n.parameters.nestInitialRessource
 }
 
-func (n *Nest) getInfo() *NestInfo {
-	return &NestInfo{
-		NestID:              n.id,
-		Worker:              n.workerNb,
-		Soldier:             n.soldierNb,
-		Ressource:           n.ressource,
-		Life:                n.life,
-		BestNetworkStruct:   fmt.Sprintf("%v", n.bestWorker.network.Getdef()),
-		BestNetworkDirCount: n.bestDirCount,
-		BestNetworkGRate:    n.bestGRate,
-		Success:             n.success,
-	}
+func (n *Nest) commitStats() {
+	n.statDecision.push()
+	n.statGoodDecision.push()
+	n.statReinforce.push()
+	n.statFade.push()
 }
 
-func (n *Nest) nextTime(ns *Nests) {
-	n.happinessTmp = 0
-	n.lifeTmp = 0
+func (n *Nest) getInfo() *NestInfo {
+	nb := float64(n.workerNb + n.soldierNb)
+	ret := &NestInfo{
+		NestID:                     n.id,
+		Worker:                     n.workerNb,
+		Soldier:                    n.soldierNb,
+		Ressource:                  n.ressource,
+		BestWorkerNetworkStruct:    fmt.Sprintf("%v", n.bestWorker.network.Getdef()),
+		BestWorkerNetworkDirCount:  n.bestWorker.dirCount,
+		BestWorkerNetworkGRate:     n.bestWorker.gRate,
+		BestSoldierNetworkStruct:   fmt.Sprintf("%v", n.bestSoldier.network.Getdef()),
+		BestSoldierNetworkDirCount: n.bestSoldier.dirCount,
+		BestSoldierNetworkGRate:    n.bestSoldier.gRate,
+		Success:                    n.success,
+		DirCount:                   n.averageDirCount,
+		GRate:                      n.averageGRate,
+	}
+	if nb > 0 {
+		ret.Decision = float64(n.statDecision.cumul) / nb
+		ret.Reinforce = float64(n.statReinforce.cumul) / nb
+		ret.Fade = float64(n.statFade.cumul) / nb
+	}
+	return ret
+}
+
+func (n *Nest) nextTime(ns *Nests, update bool) {
+	dirCountTmp := 0
+	gRateTmp := 0.0
 	n.fadePheromones()
 	if n.parameters.nestAntRenewDelay > 0 && ns.timeRef%n.parameters.nestAntRenewDelay == 0 {
 		n.ressource++
 		n.addWorker(ns, n.x+30-rand.Float64()*60, n.y+30-rand.Float64()*60, rand.Intn(outNb))
 	}
+	if update {
+		n.setBestAnts()
+	}
 	for _, ant := range n.ants {
-		n.lifeTmp += ant.Life
-		n.happinessTmp += ant.happiness
-		ant.nextTime(ns)
+		ant.nextTime(ns, update)
+		dirCountTmp += ant.dirCount
+		gRateTmp += ant.gRate
 	}
-	n.life = n.lifeTmp
-	n.happiness = 0
-	if len(n.ants) > 0 {
-		n.happiness = n.happinessTmp / float64(len(n.ants))
+	n.averageDirCount = 0
+	n.averageGRate = 0
+	if n.workerNb+n.soldierNb > 0 {
+		n.averageDirCount = float64(dirCountTmp) / float64(n.workerNb+n.soldierNb)
+		n.averageGRate = gRateTmp / float64(n.workerNb+n.soldierNb)
 	}
-	n.removeDeadAnts()
+
+	if update {
+		n.removeDeadAnts()
+		n.removePheromones()
+		n.commitStats()
+	}
 }
 
 func (n *Nest) setBestAnts() {
+	if len(n.ants) == 0 {
+		return
+	}
+	//n.bestWorkerDirCount = 0
+	//n.bestWorkerGRate = 0
+	//n.bestSoldierDirCount = 0
+	//n.bestSoldierGRate = 0
 	for _, ant := range n.ants {
 		ant.commitPeriodStats(n.ns)
-		if ant.gRate < 100 {
-			if ant.dirCount > n.bestDirCount {
+	}
+	for _, ant := range n.ants {
+		if ant.AntType == 0 {
+			if ant.dirCount > n.bestWorkerDirCount {
 				n.setBestAnt(ant)
-			} else if ant.dirCount == n.bestDirCount && ant.gRate > n.bestGRate {
+			} else if ant.dirCount == n.bestWorkerDirCount && ant.gRate >= n.bestWorkerGRate {
+				n.setBestAnt(ant)
+			}
+		} else {
+			if ant.dirCount > n.bestSoldierDirCount {
+				n.setBestAnt(ant)
+			} else if ant.dirCount == n.bestSoldierDirCount && ant.gRate >= n.bestSoldierGRate {
 				n.setBestAnt(ant)
 			}
 		}
@@ -159,11 +214,13 @@ func (n *Nest) setBestAnts() {
 }
 
 func (n *Nest) setBestAnt(ant *Ant) {
-	n.bestDirCount = ant.dirCount
-	n.bestGRate = ant.gRate
 	if ant.AntType == 0 {
+		n.bestWorkerDirCount = ant.dirCount
+		n.bestWorkerGRate = ant.gRate
 		n.bestWorker = ant
 	} else {
+		n.bestSoldierDirCount = ant.dirCount
+		n.bestSoldierGRate = ant.gRate
 		n.bestSoldier = ant
 	}
 }
@@ -207,6 +264,16 @@ func (n *Nest) removeDeadAnts() {
 	n.workerNb = workerNb
 	n.soldierNb = soldierNb
 	n.ants = ants
+}
+
+func (n *Nest) removePheromones() {
+	phes := make([]*Pheromone, 0, 0)
+	for _, phe := range n.pheromones {
+		if phe.Level > 0 {
+			phes = append(phes, phe)
+		}
+	}
+	n.pheromones = phes
 }
 
 func (n *Nest) addPheromone(x float64, y float64, id int) {

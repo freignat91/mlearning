@@ -4,10 +4,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NetworkCmd .
-var NetworkCmd = &cobra.Command{
-	Use:   "network",
-	Short: "network operations",
+// ServerCmd .
+var ServerCmd = &cobra.Command{
+	Use:   "server",
+	Short: "server operations",
 	//Aliases: []string{"pf"},
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return nil
@@ -15,5 +15,5 @@ var NetworkCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(NetworkCmd)
+	RootCmd.AddCommand(ServerCmd)
 }

@@ -9,8 +9,11 @@ service MLearningService {
   rpc Display(DisplayRequest) returns (LinesReply);
   rpc LoadTrainFile(LoadTrainFileRequest) returns (LinesReply);
   rpc Train (TrainRequest) returns (LinesReply);
-  rpc SelectNetwork (SelectNetworkRequest) returns (EmptyReply);
+  rpc TrainSoluce (TrainSoluceRequest) returns (LinesReply);
   rpc Test (TestRequest) returns (LinesReply);
+  //
+  rpc ServerSelectAnt (ServerSelectAntRequest) returns (EmptyReply);
+  rpc ServerLogs(ServerLogsRequest) returns (LinesReply);
 
 }
 
@@ -39,17 +42,16 @@ message TrainRequest {
   bool analyse = 6;
 }
 
+message TrainSoluceRequest {
+  int32 number = 1;
+}
+
 message LoadTrainFileRequest {
   string path = 1;
 }
 
 message DisplayRequest {
   bool coef = 1;
-}
-
-message SelectNetworkRequest {
-  int32 nest_id = 1;
-  int32 ant_id = 2;
 }
 
 message TestRequest {
@@ -62,4 +64,14 @@ message EmptyReply{
 
 message LinesReply{
   repeated string lines = 1;
+}
+
+message ServerLogsRequest{
+
+}
+
+message ServerSelectAntRequest {
+  int32 nest_id = 1;
+  int32 ant_id = 2;
+  string mode = 3;
 }

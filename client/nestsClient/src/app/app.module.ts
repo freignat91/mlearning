@@ -12,7 +12,7 @@ import { DrawerComponent } from './drawer/drawer.component';
 @NgModule({
   declarations: [
     AppComponent,
-    DrawerComponent
+    DrawerComponent,
   ],
   imports: [
     BrowserModule,

@@ -18,6 +18,18 @@ td {
   border-right-width: 1px;
 }
 
+td.sel {
+  padding: 0px 8px 0px 8px;
+  color: blue;
+  border:none;
+}
+
+td.selt {
+  padding: 0px 8px 0px 8px;
+  color: black;
+  border:none;
+}
+
 .sep {
   height: 15px;
 }

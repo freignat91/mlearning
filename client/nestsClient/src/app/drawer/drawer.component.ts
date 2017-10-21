@@ -15,7 +15,6 @@ export class DrawerComponent {
   private ctx: any;
   timer : any
   visionSize = 8
-  display = true
 
 
   constructor(private httpService : HttpService, private sessionService : SessionService) {
@@ -34,6 +33,11 @@ export class DrawerComponent {
         clearInterval(this.timer)
       }
     )
+    sessionService.onClear.subscribe(
+      data => {
+        this.clear()
+      }
+    )
   }
 
   ngOnInit() {
@@ -44,15 +48,19 @@ export class DrawerComponent {
         this.sessionService.ymin = data.ymin
         this.sessionService.xmax = data.xmax
         this.sessionService.ymax = data.ymax
-        this.sessionService.width = data.xmax-data.xmin
-        this.sessionService.height = data.ymax-data.ymin
+        this.sessionService.width = data.xmax - data.xmin
+        this.sessionService.height = data.ymax - data.ymin
         this.visionSize = data.ndir
         this.sessionService.selected = data.selectedAnt
-        canvasElement.width = this.sessionService.width
-        canvasElement.height = this.sessionService.height
+        this.sessionService.panelWidth = 800
+        this.sessionService.panelHeight = 500
+        canvasElement.width = this.sessionService.panelWidth
+        canvasElement.height = this.sessionService.panelHeight
+        this.sessionService.setZoom(1)
         this.ctx = canvasElement.getContext('2d');
         this.ctx.scale(1,1)
         this.ctx.translate(0.5, 0.5)
+        this.sessionService.nestsInfo = data.nests
         this.start()
         //console.log(data)
       },
@@ -68,6 +76,9 @@ export class DrawerComponent {
   }
 
   getData() {
+    if (!this.sessionService.display) {
+      return
+    }
     this.httpService.getData().subscribe(
       data => {
         this.sessionService.data = data
@@ -79,29 +90,34 @@ export class DrawerComponent {
     )
   }
 
+  clear() {
+    this.ctx.clearRect(-1, -1, this.sessionService.width+1, this.sessionService.height+1);
+  }
+
   draw() {
-    if (!this.display) {
-      return
-    }
     //console.log(this.sessionService.data)
     const ctx = this.ctx
-    ctx.lineWidth = 1;
-    ctx.clearRect(-1, -1, this.sessionService.width+1, this.sessionService.height+1);
-
+    this.clear()
+    if (!this.sessionService.display) {
+      return
+    }
     for (let obj of this.sessionService.data.foods) {
       //console.log(obj)
       if (obj.x!=0 && obj.y!=0) {
         ctx.beginPath();
         ctx.fillStyle="green";
-        ctx.fillRect(obj.x, obj.y, 3, 3)
+        ctx.fillRect(this.sessionService.getx(obj.x), this.sessionService.gety(obj.y), this.sessionService.getl(3), this.sessionService.getl(3))
       }
     }
     let id = 0
     for (let nest of this.sessionService.data.nests) {
-      let col = "blue"
-      if (id != 0) {
-        col="red"
-      }
+      let col = this.sessionService.nestColors[id]
+      ctx.beginPath();
+      ctx.strokeStyle=col
+      ctx.lineWidth = 1
+      ctx.moveTo(this.sessionService.getx(this.sessionService.nestsInfo[id].x)+this.sessionService.getl(30), this.sessionService.gety(this.sessionService.nestsInfo[id].y))
+      ctx.arc(this.sessionService.getx(this.sessionService.nestsInfo[id].x), this.sessionService.gety(this.sessionService.nestsInfo[id].y), this.sessionService.getl(30), 0, 2*Math.PI, false);
+      ctx.stroke();
       id++
       //console.log(col)
       for (let obj of nest.ants) {
@@ -115,29 +131,26 @@ export class DrawerComponent {
             ctx.lineWidth = 2
           }
           ctx.strokeStyle = col
-          ctx.moveTo(this.getx(obj.x), this.gety(obj.y));
-          ctx.lineTo(this.getx(obj.x+Math.sin(angle)*3), this.gety(obj.y+Math.cos(angle)*3))
+          ctx.moveTo(this.sessionService.getx(obj.x), this.sessionService.gety(obj.y));
+          ctx.lineTo(this.sessionService.getx(obj.x+Math.sin(angle)*3), this.sessionService.gety(obj.y+Math.cos(angle)*3))
           ctx.stroke();
 
-          if (this.sessionService.displayContact && obj.contact) {
+          if (this.sessionService.nestSelected  == id && obj.id == this.sessionService.selected) {
             ctx.beginPath();
-            ctx.stokeStyle="black"
+            ctx.strokeStyle=col
             ctx.lineWidth = 1
-            ctx.arc(this.getx(obj.x), this.gety(obj.y), this.getl(7), 0, 2*Math.PI, false);
+            ctx.arc(this.sessionService.getx(obj.x), this.sessionService.gety(obj.y), this.sessionService.getl(30), 0, 2*Math.PI, false);
+            if (obj.type == 1) {
+              ctx.arc(this.sessionService.getx(obj.x), this.sessionService.gety(obj.y), this.sessionService.getl(30*Math.sqrt(8)), 0, 2*Math.PI, false);
+            }
             ctx.stroke();
           }
-          if (id == this.sessionService.nestSelected && obj.id == this.sessionService.selected) {
-            ctx.beginPath();
-            ctx.stokeStyle=col
-            ctx.lineWidth = 1
-            ctx.arc(this.getx(obj.x), this.gety(obj.y), this.getl(30), 0, 2*Math.PI, false);
-            ctx.stroke();
-          }
+
           if (this.sessionService.displayFight && obj.fight) {
             ctx.beginPath();
-            ctx.stokeStyle="orange"
+            ctx.strokeStyle="orange"
             ctx.lineWidth = 1
-            ctx.arc(this.getx(obj.x), this.gety(obj.y), this.getl(7), 0, 2*Math.PI, false);
+            ctx.arc(this.sessionService.getx(obj.x), this.sessionService.gety(obj.y), this.sessionService.getl(7), 0, 2*Math.PI, false);
             ctx.stroke();
           }
         }
@@ -151,22 +164,10 @@ export class DrawerComponent {
           //ctx.strokeStyle="black";
           //ctx.moveTo(obj.x, obj.y)
           //ctx.lineTo(obj.x, obj.y)
-          ctx.fillRect(obj.x, obj.y, 1, 1)
+          ctx.fillRect(this.sessionService.getx(obj.x), this.sessionService.gety(obj.y), 1, 1)
         }
       }
     }
-  }
-
-  getx(x : number) : number {
-    return (x-this.sessionService.xmin)*this.sessionService.width/this.sessionService.xmax
-  }
-
-  gety(y : number) : number {
-    return (y-this.sessionService.ymin)*this.sessionService.height/this.sessionService.ymax
-  }
-
-  getl(l : number) : number {
-    return l*this.sessionService.width/(this.sessionService.xmax-this.sessionService.xmin)
   }
 
 }

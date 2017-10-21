@@ -74,22 +74,14 @@ func (s *Server) Train(ctx context.Context, req *TrainRequest) (*LinesReply, err
 	return &LinesReply{Lines: lines}, nil
 }
 
-//SelectNetwork .
-func (s *Server) SelectNetwork(ctx context.Context, req *SelectNetworkRequest) (*EmptyReply, error) {
-	network, err := s.nests.GetNetwork(int(req.NestId), int(req.AntId))
-	if err != nil {
-		return nil, err
-	}
-	s.network = network
-	return &EmptyReply{}, nil
+//TrainSoluce .
+func (s *Server) TrainSoluce(ctx context.Context, req *TrainSoluceRequest) (*LinesReply, error) {
+	lines := s.nests.TrainSoluce(int(req.Number))
+	return &LinesReply{Lines: lines}, nil
 }
 
 //Test .
 func (s *Server) Test(ctx context.Context, req *TestRequest) (*LinesReply, error) {
-	network, err := s.nests.GetNetwork(int(req.NestId), int(req.AntId))
-	if err != nil {
-		return nil, err
-	}
-	lines := network.Test()
+	lines := s.nests.Test()
 	return &LinesReply{Lines: lines}, nil
 }

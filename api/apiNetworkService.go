@@ -88,16 +88,18 @@ func (api *MlAPI) Train(name string, nb int, all bool, hide bool, createNetwork 
 	return lines.Lines, err
 }
 
-//SelectNetwork .
-func (api *MlAPI) SelectNetwork(nestID int, antID int) error {
+//TrainSoluce .
+func (api *MlAPI) TrainSoluce(nb int) ([]string, error) {
 	client, _ := api.getClient()
-	_, err := client.client.SelectNetwork(context.Background(),
-		&mlserver.SelectNetworkRequest{
-			NestId: int32(nestID),
-			AntId:  int32(antID),
+	lines, err := client.client.TrainSoluce(context.Background(),
+		&mlserver.TrainSoluceRequest{
+			Number: int32(nb),
 		},
 	)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return lines.Lines, err
 }
 
 //TestNetwork .
