@@ -72,7 +72,7 @@ export class DrawerComponent {
 
   start() {
     clearInterval(this.timer)
-    this.timer = setInterval(this.getData.bind(this), 100);
+    this.timer = setInterval(this.getData.bind(this), 150);
   }
 
   getData() {
