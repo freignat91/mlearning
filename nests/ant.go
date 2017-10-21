@@ -505,7 +505,7 @@ func (a *Ant) updateEntriesForHostileAnts(ns *Nests) bool {
 			}
 		}
 		if a.AntType == 0 {
-			if rand.Float64() < 0.1 && (a.X-a.nest.x)*(a.X-a.nest.x)+(a.Y-a.nest.y)*(a.Y-a.nest.y) > 4000 {
+			if rand.Float64() < 0.05 && (a.X-a.nest.x)*(a.X-a.nest.x)+(a.Y-a.nest.y)*(a.Y-a.nest.y) > 4000 {
 				a.printf(ns, "current ant panic mode\n")
 				a.panic = true
 				a.Fight = false
@@ -530,14 +530,26 @@ func (a *Ant) updateEntriesForFriendAnts(ns *Nests) bool {
 		for _, ant := range a.nest.ants {
 			if ant.Life > 0 && ant.AntType == 0 && ant != a && ant.food == nil {
 				dist2 := a.distAnt2(ant)
-				if dist2 < dist2Max/16 {
-				}
 				if dist2 < dist2m {
 					antMin = ant
 					dist2m = dist2
 				}
 			}
 		}
+		/*
+			for _, ant := range a.nest.ants {
+				if ant.Life > 0 && ant.AntType == 0 && ant != a && ant.food == nil {
+					dist2 := a.distAnt2(ant)
+					if dist2 < dist2Max {
+						antMin = ant
+						dist2m = dist2
+						index := a.getDirection(ns, antMin.X, antMin.Y)
+						a.entries[index] += ((dist2Max - dist2m) / dist2Max)
+					}
+				}
+			}
+		*/
+
 	}
 	if a.AntType == 1 && a.timeWithoutHostile > 5000 {
 
@@ -550,24 +562,25 @@ func (a *Ant) updateEntriesForFriendAnts(ns *Nests) bool {
 				}
 			}
 		}
-
-		for _, ant := range a.nest.ants {
-			if ant.Life > 0 && ant != a && ant.food == nil {
-				dist2 := a.distAnt2(ant)
-				if dist2 < dist2Max {
-					antMin = ant
-					dist2m = dist2
-					index := a.getDirection(ns, antMin.X, antMin.Y)
-					a.entries[index] += ((dist2Max - dist2m) / dist2Max)
+		/*
+			for _, ant := range a.nest.ants {
+				if ant.Life > 0 && ant != a && ant.food == nil {
+					dist2 := a.distAnt2(ant)
+					if dist2 < dist2Max {
+						antMin = ant
+						dist2m = dist2
+						index := a.getDirection(ns, antMin.X, antMin.Y)
+						a.entries[index] += ((dist2Max - dist2m) / dist2Max)
+					}
 				}
 			}
-		}
+		*/
 	}
 	a.printf(ns, "closest friend: %+v\n", antMin)
 	if antMin != nil {
-		index := a.getDirection(ns, antMin.X, antMin.Y)
-		a.index = index
-		a.entries[index] = ((dist2Max - dist2m) / dist2Max)
+		//index := a.getDirection(ns, antMin.X, antMin.Y)
+		//a.index = index
+		//a.entries[index] = ((dist2Max - dist2m) / dist2Max)
 		return true
 	}
 	return false
