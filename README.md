@@ -18,9 +18,6 @@ version 0.0.2: Foods appears in the space, ants are able to get them and bring b
 
 version 0.0.3: with two or four nests and two ant types (worker and soldier), ants will be able to fight agains the other nest ants.
 
-version 0.0.4 (not done): in version 0.0.3 worker panic mode and worker return to nest are hard-coded, in 0.0.4, panic mode should be network train result and have return to nests as network train result, including avoid obstacles on the path
-
-version 0.0.5 (not done): in all the other versions, ants take decision regarding there immediate environment. This version will dig on integrating decision history in the network scope in order to have better middle-term decisions
 
 
 
@@ -49,12 +46,17 @@ For that let's consider the consequence of an ant decision, using the following 
 
 - for each simulation tick and for each ant:
   - build the network entry using what the ant see (see chapter `ant network structure`)
-  - propagate the entry in the network
-  - considering the network output, take a decision about the direction the ant should move (see chapter `take decision on output`).
-  - move the ant to the chosen direction
   - compute the happiness of the ant (see chapter `the happiness of a ant`)
-  - if the happiness is the same than the one of previous loop, do nothing and keep the direction as it is.
-  - if this happiness is greater than the one of previous loop, then consider that the decision is good and train the network using the previous entry and the output corresponding the chosen direction.
+  - if this happiness is the same than the one of previous loop, do nothing and keep the direction as it is.
+  - if this happiness is greater than the one of previous loop, then consider that the previous decision was good, keep the direction as it is and train the network using the previous entry and the output corresponding the chosen direction.
+  if this happiness is lower than the previous one, indicating that either the previous decision was bad or the environment of the ant changed:
+    - define if the decision should be random or taken by the network, (see chapter `decision random versus network`)
+    - if the decision should be random, then choose a new direction randomly
+    - if the decision should be taken by the network then:
+      - propagate the entry in the network
+      - considering the network output, set the new direction the ant is going to move (see chapter `take decision on output`).
+  - move the ant to the chosen direction
+
 
 This loop appeared not to be enough, the network has difficulties to converge
 
@@ -79,34 +81,30 @@ On regular basis (every 1000 or 10000 ticks), for each ant:
   - look at the immediate other directions (+1 and -1 regarding the regular chosen one) and if one of them, hasn't been taken more than a given time (100 for now), then this decisions instead of the regular one.
   - This decision will be as usual reinforced or fade considering its consequence on the next loop.
 
-This way, we train networks on decisions it doesn't show too much on its regular way. If the "forced" decisions appear to be good, they will be naturally reinforced and then their statistical distribution will be better (>100) and they become regular decisions.
+This way, networks are trained on decisions they don't show too much on their regular way. If the "forced" decisions appear to be good, they will be naturally reinforced and then their statistical distribution will be better (>100) and they become regular decisions.
 
-In version 0.0.3, theses solutions appeared not so good, because there are more decision kinds to take with different kinds of contexts.
+In version 0.0.3, theses solutions appeared not so good, because there are more decision kinds to take with more different kinds of contexts.
 
-These rules have been removed, a bad decision is not fade anymore and random decisions next to the regular one not taken anymore.
+These rules have been removed, a bad decision is not faded anymore and random decisions next to the regular one not taken anymore.
 
-Back to the basis, to test if the system should take decision with the network or randomly, the following test is used: `rand() > 1 - gRate`
- where:
-- rand() generate an random number between 0 and 1
-- gRate is the good decision rate (good decision number / total decision number)
-
-if the test is true, the system use the network to take decision otherwise the decision is taken randomly.
-
-So at the beginning the network has 0% of good decision and `rand() > 1 - gRate` gives `rand() > 1` which is always false, so the decision are taken randomly.
-The random decisions which appear good (which raise the ant happiness) are used to train the network and this one becomes more and mode good.
-when it reaches for instance 50% of good decisions, the test gives `rand() > 0.5` witch is true half of the time, and half of the time the decisions are taken by the network.
-when the gRate is closed to 100%, the test gives `rand() > ~0`, which is most of the time true and decision are mostly taken using the network
+Back to the basis, to test if the system should take decision with the network or randomly, the following test is used: `rand() > 1 - gRate` (see chapter `random version network decisions`)
 This way more the network is good more it is used.
 
-Using these rules the networks are in capacity to converge if they are able to, but it appears that they stays at about 50% of good answers, which is just not better that random decisions.
+Now the networks are in capacity to converge if they are able to, but it appears that they stays at about 50% of good answers, which is just not better that random decisions.
 
-Analysing why, it appears that the network are reinforced with not optimal decisions, meaning decisions which are good (they raise the ant happiness), but another ones could have been better (raise more the ant happiness).
-Most of the not optimal decisions become bad decisions when the context change, only optimal decision stay good no matter the context.
+Analysing why, it appears that the networks are reinforced with not optimal decisions, meaning decisions which are good (they raise the ant happiness), but another ones could have been better (raise more the ant happiness).
+Most of the not optimal decisions become bad decisions when the context change, where optimal decision stay good on the larger king of contexts.
 So they need a way to reinforce mostly optimal decisions.
 
 In order to try to detect the optimal decisions, the system compute permanently the average value of the difference between two happiness values when this difference is positive.
-The system reinforce decision (train the network) if the current difference is upper to the average values, so there is better chance that the decision is one of the better.
-This way the networks are train less often, but with a better quality data and converge fast to reach about 100% of good answers
+The system reinforce decision (train the network) if the current difference is upper to the average values, so there is better chance that the reinforced decisions are ones of the better.
+This way the networks are train less often, but with a better quality data and converge fast to reach about 60-65% of good answers
+
+That was not enough, something else made the networks not able not converge well.
+
+Analysing why, it appears that networks was able to chose again and again the same bad decision if the random test which define if decision should be random or network defines several time the network decisions then the network will take mostly 3 times the same answer because the context doesn't change too much between 2 ticks. If this answer is bad, then it takes 3 times often the same bad answers
+To avoid that, the test to define if the ant should take a random or a network decision change a little. If the previous previous decision was the same that the previous decision and if it appeared as bad then new decision is taken randomly no matter the result of the formula `rand() > 1 - gRate`
+This way the network good decisions rate started to raise about 95% of good answer
 
 Now, there is another issue: We don't know which network structure(s) should be used. 3 layers, 4 layers? how many neurones by layer?
 
@@ -192,6 +190,27 @@ The server is able to run with any precision number, 8 appeared to be enough and
 When input layer is set and propagated through the network, then the output layer is used to decide to direction to take, see chapter `take decision on output`
 
 
+# random version network decisions
+
+To define if the system should take decision with the network or randomly, the following test is used:
+`rand() > 1 - gRate`
+ where:
+- rand() generate an random number between 0 and 1
+- gRate is the good decision rate (good decision number / total decision number)
+
+if the test is true, the system use the network to take decision otherwise the decision is taken randomly.
+
+So at the beginning the network has 0% of good decision and `rand() > 1 - gRate` gives `rand() > 1` which is always false, so the decision are taken randomly.
+The random decisions which appear good (which raise the ant happiness) are used to train the network and this one becomes more and mode good.
+when it reaches for instance 50% of good decisions, the test gives `rand() > 0.5` witch is true half of the time, and half of the time the decisions are taken by the network.
+when the gRate is closed to 100%, the test gives `rand() > ~0`, which is most of the time true and decision are mostly taken using the network
+
+This way more the network is good more it is used.
+
+To avoid to repeat network bad decisions again and again, the system tests also if the previous decision was the same than the previous previous decision. If yes and if they were bad, the random decision mode is chosen for the next new decision no matter the result of the test `rand() > 1 - gRate`.
+This is something to review is version 0.0.5 with historical data integration.
+
+
 # take decision on output
 
 The way to take a direction decision using the network output is the following:
@@ -218,7 +237,7 @@ This counter-balance the flattering effect given by the bad decision fading. see
 
 # Fade decision
 
-not used anymore in version 0.0.3
+not used anymore starting version 0.0.3
 
 If we only reinforce the good decisions, the ones which raise the ant happiness, it takes too much time to the networks to converge and some of them can't converge because their random initial synapse values lead to only bad decisions.
 
@@ -320,7 +339,7 @@ Then there are two executables in your $GOPATH/bin directory:
 
 ## server
 
-To start server execute the command: `mlserver`
+To start server execute the command: `mlserver` in the project directory.
 ($GOPATH/bin should be in your $PATH, if not execute $GOPATH/bin/mlserver)
 
 ## UI
@@ -395,7 +414,7 @@ Commandes list:
 
 ### ml network create x1 x2 x3 ... xn
 
-create a new neuron network having:
+create a new neuron network for test having:
   - x1 neurons in the input layer
   - xn neurons in the output layer
   - x1 to x(n-1) neurons in the hidden layers
@@ -467,21 +486,6 @@ if nestId = "worse" set the worse network as current and test it
 if not argument, set the current ant (selected in UI) as current and test it
 
 test it, means propagate the main possible entry to see how the network converge and is able to distinct decision:
-
-```
-ml network test best
-Test network: [8 22 8]
-[ 1 0 0 0 0 0 0 0 0 ] => [ 0.05 0.03 0.03 0.03 (0.05) 0.84 0.04 0.03 ] max=5/4 diffMax=0.70
-[ 0 1 0 0 0 0 0 0 0 ] => [ 0.03 0.02 0.03 0.03 0.04 (0.03) 0.83 0.03 ] max=6/5 diffMax=0.70
-[ 0 0 1 0 0 0 0 0 0 ] => [ 0.04 0.02 0.05 0.03 0.03 0.04 (0.04) 0.78 ] max=7/6 diffMax=0.66
-[ 0 0 0 1 0 0 0 0 0 ] => [ 0.89 0.01 0.03 0.01 0.03 0.02 0.01 (0.02) ] max=0/7 diffMax=0.76
-[ 0 0 0 0 1 0 0 0 0 ] => [ (0.09) 0.10 0.65 0.09 0.07 0.08 0.08 0.08 ] max=2/0 diffMax=0.50
-[ 0 0 0 0 0 1 0 0 0 ] => [ 0.02 (0.81) 0.06 0.02 0.03 0.03 0.02 0.02 ] max=1/1 diffMax=0.68
-[ 0 0 0 0 0 0 1 0 0 ] => [ 0.02 0.01 (0.03) 0.84 0.03 0.01 0.02 0.01 ] max=3/2 diffMax=0.71
-[ 0 0 0 0 0 0 0 1 0 ] => [ 0.03 0.03 0.02 (0.03) 0.87 0.03 0.03 0.02 ] max=4/3 diffMax=0.74
-[ 0 0 0 0 0 0 0 0 1 ] => [ 0.07 0.05 0.16 0.12 (0.09) 0.06 0.05 0.06 ] max=2/4 diffMax=0.08
-Match rate:0.00000 tot:5.52641 distinct=8
-```
 
 where:
 - max=x1/x2, x1 is the index of the max value, x2 the theoretical best answer

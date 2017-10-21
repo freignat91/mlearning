@@ -578,9 +578,9 @@ func (a *Ant) updateEntriesForFriendAnts(ns *Nests) bool {
 	}
 	a.printf(ns, "closest friend: %+v\n", antMin)
 	if antMin != nil {
-		//index := a.getDirection(ns, antMin.X, antMin.Y)
-		//a.index = index
-		//a.entries[index] = ((dist2Max - dist2m) / dist2Max)
+		index := a.getDirection(ns, antMin.X, antMin.Y)
+		a.index = index
+		a.entries[index] = ((dist2Max - dist2m) / dist2Max)
 		return true
 	}
 	return false
